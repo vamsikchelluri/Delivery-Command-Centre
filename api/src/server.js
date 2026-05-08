@@ -19,17 +19,21 @@ import childRoutes from "./routes/children.js";
 import { requireAuth } from "./middleware/auth.js";
 
 const app = express();
+app.set("trust proxy", 1);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
-const apiCors = cors({
-  origin(origin, callback) {
-    if (!origin || config.allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error("Not allowed by CORS"));
-  }
+const apiCors = cors((req, callback) => {
+  const origin = req.get("origin")?.replace(/\/$/, "");
+  const requestOrigin = `${req.protocol}://${req.get("host")}`;
+  const sameServedOrigin = origin === requestOrigin;
+  const allowed = !origin || sameServedOrigin || config.allowedOrigins.includes(origin);
+
+  callback(null, {
+    origin: allowed ? origin || true : false
+  });
 });
 
 app.use("/api", apiCors);
