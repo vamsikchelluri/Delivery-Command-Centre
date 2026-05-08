@@ -17,6 +17,7 @@ import actualRoutes from "./routes/actuals.js";
 import adminRoutes from "./routes/admin.js";
 import childRoutes from "./routes/children.js";
 import { requireAuth } from "./middleware/auth.js";
+import { redactSensitiveFinancials } from "./middleware/sensitiveData.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -45,16 +46,16 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-app.use("/api/dashboard", requireAuth, dashboardRoutes);
-app.use("/api/resource-planning", requireAuth, resourcePlanningRoutes);
-app.use("/api/financials", requireAuth, financialRoutes);
+app.use("/api/dashboard", requireAuth, redactSensitiveFinancials, dashboardRoutes);
+app.use("/api/resource-planning", requireAuth, redactSensitiveFinancials, resourcePlanningRoutes);
+app.use("/api/financials", requireAuth, redactSensitiveFinancials, financialRoutes);
 app.use("/api/accounts", requireAuth, accountRoutes);
-app.use("/api/resources", requireAuth, resourceRoutes);
-app.use("/api/opportunities", requireAuth, opportunityRoutes);
-app.use("/api/sows", requireAuth, sowRoutes);
-app.use("/api/actuals", requireAuth, actualRoutes);
+app.use("/api/resources", requireAuth, redactSensitiveFinancials, resourceRoutes);
+app.use("/api/opportunities", requireAuth, redactSensitiveFinancials, opportunityRoutes);
+app.use("/api/sows", requireAuth, redactSensitiveFinancials, sowRoutes);
+app.use("/api/actuals", requireAuth, redactSensitiveFinancials, actualRoutes);
 app.use("/api/admin", requireAuth, adminRoutes);
-app.use("/api/children", requireAuth, childRoutes);
+app.use("/api/children", requireAuth, redactSensitiveFinancials, childRoutes);
 
 if (fs.existsSync(clientDistPath)) {
   app.use(express.static(clientDistPath));
