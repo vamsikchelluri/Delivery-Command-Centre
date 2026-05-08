@@ -23,14 +23,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const clientDistPath = path.resolve(__dirname, "../../client/dist");
 
-app.use(cors({
+const apiCors = cors({
   origin(origin, callback) {
     if (!origin || config.allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
   }
-}));
+});
+
+app.use("/api", apiCors);
 app.use(express.json());
 app.use(morgan("dev"));
 
