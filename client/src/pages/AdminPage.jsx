@@ -640,6 +640,18 @@ function getColumns(collection, setEditing) {
 function AdminForm({ collection, record, onClose, onSaved }) {
   const [form, setForm] = useState(normalizeForm(collection, record));
   const [error, setError] = useState("");
+  const { data: roleOptions = [] } = useQuery({
+    queryKey: ["admin", "appRoles", "options"],
+    queryFn: () => apiFetch("/admin/appRoles"),
+    enabled: collection === "users"
+  });
+  const { data: currencyOptions = [] } = useQuery({
+    queryKey: ["admin", "currencies", "options"],
+    queryFn: () => apiFetch("/admin/currencies"),
+    enabled: collection === "locations"
+  });
+  const activeRoleOptions = roleOptions.filter((role) => role.active !== false);
+  const activeCurrencyOptions = currencyOptions.filter((currency) => currency.active !== false);
 
   function update(key, value) {
     setForm({ ...form, [key]: value });
@@ -671,6 +683,20 @@ function AdminForm({ collection, record, onClose, onSaved }) {
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
                 <option value="true">True</option>
                 <option value="false">False</option>
+              </select>
+            ) : collection === "users" && key === "role" ? (
+              <select value={form[key]} onChange={(event) => update(key, event.target.value)} required>
+                <option value="">Select role</option>
+                {activeRoleOptions.map((role) => (
+                  <option key={role.id || role.name} value={role.name}>{role.name}</option>
+                ))}
+              </select>
+            ) : collection === "locations" && ["defaultCompensationCurrency", "defaultPaymentCurrency"].includes(key) ? (
+              <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
+                <option value="">None</option>
+                {activeCurrencyOptions.map((currency) => (
+                  <option key={currency.id || currency.code} value={currency.code}>{currency.code} - {currency.name}</option>
+                ))}
               </select>
             ) : key === "locationType" ? (
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>

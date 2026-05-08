@@ -70,6 +70,13 @@ async function addAuditToPostgres({ entityName, recordId, actionType, actor = "S
   });
 }
 
+async function validateUserRole(roleName) {
+  const role = await prisma.appRole.findUnique({
+    where: { name: roleName }
+  });
+  return Boolean(role?.active);
+}
+
 const collections = {
   skills: {
     schema: z.object({
@@ -301,6 +308,10 @@ router.post("/:collection", asyncRoute(async (req, res) => {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
 
+  if (req.params.collection === "users" && !(await validateUserRole(parsed.data.role))) {
+    return res.status(400).json({ message: "User role must be selected from active Admin roles." });
+  }
+
   const postgresConfig = postgresAdminCollections[req.params.collection];
   if (postgresConfig) {
     const record = await prisma[postgresConfig.model].create({
@@ -337,6 +348,9 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
     if (!parsed.success) {
       return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
     }
+    if (req.params.collection === "users" && parsed.data.role && !(await validateUserRole(parsed.data.role))) {
+      return res.status(400).json({ message: "User role must be selected from active Admin roles." });
+    }
     const updated = await prisma[postgresConfig.model].update({
       where: { id: req.params.id },
       data: stripUndefined(parsed.data)
@@ -361,6 +375,9 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
   const parsed = config.schema.partial().safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
+  }
+  if (req.params.collection === "users" && parsed.data.role && !(await validateUserRole(parsed.data.role))) {
+    return res.status(400).json({ message: "User role must be selected from active Admin roles." });
   }
 
   const updated = updateRecord(req.params.collection, req.params.id, parsed.data);
