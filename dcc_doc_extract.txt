@@ -1,0 +1,163 @@
+IntraEdge
+SAP Staff Augmentation
+Delivery Command Center
+Product Documentation
+COO-Level Visibility Across Delivery Operations
+Version 4.1  ·  April 2026
+Internal Use Only  ·  Confidential
+1. Executive Summary
+The Delivery Command Center (DCC) is an internal operations platform purpose-built for IntraEdge, a SAP staff augmentation firm. It provides the COO and leadership team with real-time visibility across the company's three core operational pillars: resource management, project delivery, and business pipeline.
+Before DCC, operational data was scattered across spreadsheets, email threads, and siloed tools. Leadership had no single view of bench strength, project margins, or pipeline health. DCC consolidates all of this into one web application accessible from any browser.
+1.1 Business Problem Solved
+1.2 Who Uses It
+COO / Director — full dashboard, all modules, financial data
+Delivery Managers — project management, resource assignments, actuals entry
+Account Managers — pipeline management, opportunity tracking
+Project Managers — role management, resource allocation on their projects
+Finance Viewers — read-only P&L and financial reporting
+2. Feature Catalogue
+2.1 COO Dashboard
+The dashboard is the landing page after login. It aggregates key metrics from all modules into a single view refreshed every 60 seconds.
+2.2 Resource Management
+Full lifecycle management of the consulting workforce — employees, contractors, and C2C resources across offshore and onsite locations.
+2.3 Projects (SOW Management)
+End-to-end management of Statement of Work engagements, from creation through resource deployment and monthly actuals.
+2.4 Pipeline Management
+Pre-SOW opportunity tracking from initial qualification through to conversion into a project.
+2.5 Authentication & Access Control
+JWT-based authentication with configurable role-based access control (RBAC) managed through the Settings module.
+3. Core Business Logic
+3.1 Cost Rate Engine
+The cost engine converts raw compensation inputs into a standardised USD/hour cost rate used across all P&L calculations. The computation varies by resource type:
+System configuration values (editable in Settings):
+Standard hours per year: 1,800 (default)
+Overhead multiplier: 1.2 (20% overhead — covers PF, gratuity, insurance, admin)
+INR/USD FX rate: maintained in Currencies module, updated manually
+A full cost history is maintained for each resource. Historical deployments use the rate locked at the time of deployment, not the current rate. This ensures historical P&L accuracy even after rate changes.
+3.2 SOW P&L Calculation
+Revenue, cost, and margin are computed dynamically from deployment data for every SOW:
+For each deployment on a role: planned hours = working days/month × 8 × allocation %
+Actual hours override planned hours when entered in the Monthly Actuals tab
+Revenue (T&M): billed hours × bill rate; Revenue (Fixed Monthly): fixed amount × months deployed
+Cost: hours × resource USD/hr rate (actual hours if available, else planned)
+Gross Margin = Revenue − Cost; Margin % = Margin ÷ Revenue × 100
+Hours Used % = Total actual hours ÷ Total planned hours × 100
+These calculations run client-side in real time — no server round-trip needed for P&L display.
+3.3 Pipeline Weighted Forecast
+Each opportunity has a win probability (0–100%). The weighted pipeline value is:
+Weighted Value = Estimated Revenue × (Probability ÷ 100)
+Estimated revenue is computed from the opportunity's roles: sum of (total hours × bill rate) across all defined roles. The dashboard sums weighted values across all active (non-Lost) opportunities to produce the total weighted pipeline forecast.
+Stage probability defaults:
+Qualifying: 20%
+Proposed: 40%
+Negotiating: 70%
+Won: 100%
+Lost: 0%
+3.4 Bench Management
+A resource is considered "on bench" when they have no active deployment. The system tracks bench duration from the date their last deployment ended (benchSince). Dashboard alerts surface:
+Resources on bench for more than 14 days (warning)
+Resources on bench for more than 30 days (critical)
+Resources with roll-off dates within 30 days (upcoming bench)
+3.5 Milestone Billing (Fixed Price SOWs)
+Fixed Price SOWs use milestone-based billing rather than hourly tracking. Each milestone captures:
+Planned date and planned amount (set at SOW creation)
+Actual date and actual amount (updated when milestone is delivered)
+Invoice date and payment date (updated as billing progresses)
+Status: Upcoming → Invoiced → Paid
+Dashboard alerts flag milestones with a planned date within the next 14 days that are still in Upcoming status.
+4. Technical Architecture
+4.1 Technology Stack
+4.2 System Architecture
+DCC follows a monorepo structure with a clear separation between client and API:
+delivery-command-center/
+client/  — React frontend (Vite build tool)
+  src/pages/  — page-level components (Dashboard, Resources, Projects, Pipeline, Settings)
+  src/components/  — reusable UI components (layout, resources, modals)
+  src/lib/  — API client, auth context, cost engine utilities
+  src/context/  — AuthContext (user state, login/logout)
+api/  — Node.js/Express backend
+  src/routes/  — REST route handlers (resources, projects, pipeline, auth, etc.)
+  src/middleware/  — JWT verification, RBAC enforcement, audit logging
+  src/lib/  — Prisma client singleton, cost computation helpers
+  prisma/  — schema.prisma, migrations, seed data
+Dockerfile  — containerised build and runtime
+railway.toml  — Railway build and deploy configuration
+4.3 API Design
+The API follows RESTful conventions. All routes except /api/auth/* require a valid JWT Bearer token.
+4.4 Database Schema
+The PostgreSQL database has 18 tables organised into four domains:
+Master Data
+Skill — SAP skill catalogue with sub-modules (e.g. SAP FICO with GL, AP, AR sub-modules)
+Currency — FX rate table (USD base; INR, GBP, EUR supported)
+SystemConfig — key/value store for operational parameters
+Resource Domain
+Resource — core resource record with employment, cost, skill, and compliance fields
+ResourceSkill — many-to-many between Resource and Skill for secondary skills with per-skill sub-modules
+CostHistory — append-only rate change log; one active record per resource at any time
+Project Domain
+Project — SOW with client, dates, type, currency, contract value, PM/DM/AM links
+Role — billable role on a project with bill rate, billing type, planned dates
+Deployment — assignment of one resource to one role for a date range at an allocation percentage
+Actual — monthly actual hours per deployment; one row per deployment per month
+Milestone — fixed-price billing milestones with planned and actual amounts
+Pipeline Domain
+Opportunity — pre-SOW deal with stage, probability, financials, source, account manager
+OppRole — staffing requirement on an opportunity with experience level, bill rate, cost guidance
+Auth & RBAC Domain
+AppRole — role definition (Super Admin, COO, DM, AM, PM, Finance, Read Only)
+Permission — module-level access per role (Full / Read / None)
+FieldPermission — field-level visibility per role (cost rates, margins, etc.)
+User — employee login record with role assignment
+Session — refresh token store with IP and user agent
+AuditLog — immutable event log for all write operations
+4.5 Security
+5. Key Process Flows
+5.1 Resource Onboarding
+HR / Admin opens Resources → Add Resource
+Step 1 — Identity: First name, last name, employee ID, email, phone
+Step 2 — Skills: Primary skill + sub-modules, secondary skills + their sub-modules
+Step 3 — Employment: Location (offshore/onsite), employment type, joining/contract dates, notice period, roll-off date, visa details
+Step 4 — Cost & Payment: Enter CTC or hourly rate; system computes USD/hr in real time; payment terms and currency
+Save: API creates Resource record, ResourceSkill records, initial CostHistory record
+Resource appears in roster with status AVAILABLE
+5.2 SOW Creation and Staffing
+DM or PM opens Projects → New SOW
+Fills engagement details: client, project name, SOW number, type (T&M / Fixed), currency, dates, contract value
+Assigns Project Manager, Delivery Manager, Account Manager from user dropdowns
+Saves SOW (status: Draft or Active)
+Opens SOW detail → Roles tab → Add Role: title, skill, billing type, bill rate, planned dates
+On each role: click Assign Resource → select available resource → system shows revenue/cost/margin preview
+Confirm assignment: Deployment record created, resource status updates to Deployed
+Monthly: PM opens Actuals tab, enters actual hours per resource per month
+5.3 Pipeline to SOW Conversion
+AM creates opportunity with client, name, stage (Qualifying), probability, source, AM, dates, target margin
+Adds required roles: SAP FICO Consultant, 800 hours, $95/hr bill rate, $55/hr cost guidance
+As deal progresses: moves stage to Proposed, Negotiating; system updates probability
+On win: stage set to Won; Convert to SOW button appears
+Click Convert: system creates Draft SOW from opportunity data, carries over roles
+DM opens new SOW, activates it, assigns resources to roles
+5.4 Monthly P&L Reporting
+Finance Viewer or COO opens Projects or Dashboard
+System reads all active deployments and their actuals for the period
+Revenue computed: actual hours × bill rate (or planned hours if actuals not entered)
+Cost computed: actual hours × resource USD/hr rate locked at deployment time
+Margin and margin % computed per SOW and aggregated to portfolio level
+Dashboard chart shows monthly trend; individual SOW detail shows role-by-role breakdown
+6. Configuration & Administration
+6.1 System Settings
+Accessible to Super Admin and COO roles. Settings module contains:
+Users — create, edit, deactivate users; assign roles; force password reset
+Roles & Permissions — configure module access (Full/Read/None) and field visibility per role
+Skills — manage the SAP skill catalogue and sub-modules
+Currencies — update FX rates (INR/USD and others) used in cost calculations
+System Config — adjust standard hours/year, overhead multiplier
+Audit Log — searchable log of all system events
+Sessions — view and terminate active user sessions
+6.2 Seeded Reference Data
+The following data is pre-loaded at initial deployment:
+21 SAP skills with sub-modules (SAP FICO, SD, MM, HCM, Basis, ABAP, S/4HANA, WM/EWM, PM, QM, BW/BI, SuccessFactors, Ariba, Concur, Fieldglass, IBP, C4C, BTP, S/4HANA Migration, Project Management, and others)
+4 currencies: USD (base), INR, GBP, EUR with default exchange rates
+7 RBAC roles with default permission matrices
+1 Super Admin user: admin@intraedge.com
+6.3 Deployment Infrastructure
+7. Glossary

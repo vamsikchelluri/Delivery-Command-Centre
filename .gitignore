@@ -1,0 +1,14 @@
+node_modules
+dist
+.env
+*.log
+api/dev.db
+api/dev.db-journal
+api/prisma/dev.db
+api/prisma/dev.db-journal
+client/.vite
+playwright-report
+test-results
+*-check.png
+client-dashboard-*.png
+client-ui-*.png

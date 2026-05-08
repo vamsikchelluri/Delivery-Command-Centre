@@ -1,0 +1,24 @@
+{
+  "name": "delivery-command-center",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "api",
+    "client"
+  ],
+  "scripts": {
+    "install:all": "npm.cmd install --workspaces",
+    "dev": "npm.cmd run dev --workspace api",
+    "dev:client": "npm.cmd run dev --workspace client",
+    "dev:api": "npm.cmd run dev --workspace api",
+    "db:generate": "npm.cmd run db:generate --workspace api",
+    "db:push": "npm.cmd run db:push --workspace api",
+    "db:seed": "npm.cmd run db:seed --workspace api",
+    "smoke:data-entry": "node api/scripts/dataEntrySmoke.js",
+    "build": "npm.cmd run build --workspace client",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

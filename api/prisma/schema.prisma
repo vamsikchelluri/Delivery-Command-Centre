@@ -1,0 +1,290 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  ON_LEAVE
+  SABBATICAL
+  INACTIVE
+  TERMINATED
+  EXITED
+}
+
+enum DeliveryStatus {
+  AVAILABLE
+  FULLY_DEPLOYED
+  PARTIALLY_DEPLOYED
+}
+
+enum OpportunityStage {
+  QUALIFYING
+  PROPOSED
+  NEGOTIATING
+  WON
+  LOST
+}
+
+enum SowStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  TERMINATED
+}
+
+enum DeploymentStatus {
+  PLANNED
+  ACTIVE
+  ENDED
+  CANCELLED
+}
+
+enum BillingModel {
+  TM_HOURLY
+  FIXED_MAN_MONTH
+  FIXED_MILESTONE
+}
+
+enum MeasurementUnit {
+  HOURS
+  MAN_MONTHS
+}
+
+model Account {
+  id         String        @id @default(cuid())
+  number     String        @unique
+  name       String
+  industry   String?
+  region     String?
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  opportunities Opportunity[]
+  sows       Sow[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  number       String   @unique
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  canViewCost  Boolean  @default(false)
+  canViewMargin Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Resource {
+  id                 String           @id @default(cuid())
+  number             String           @unique
+  firstName          String
+  lastName           String
+  email              String?
+  primarySkill       String
+  subModule          String?
+  location           String?
+  locationType       String?
+  employmentType     String?
+  employmentStatus   EmploymentStatus
+  deliveryStatus     DeliveryStatus
+  deployedPercent    Int              @default(0)
+  availableDate      DateTime?
+  deliveryRollOffDate DateTime?
+  costRate           Float            @default(0)
+  ownerName          String?
+  currentSowName     String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deployments        Deployment[]
+}
+
+model Opportunity {
+  id                  String            @id @default(cuid())
+  number              String            @unique
+  accountId           String
+  name                String
+  stage               OpportunityStage
+  probability         Int
+  estimatedRevenue    Float
+  roleEstimatedRevenue Float            @default(0)
+  weightedValue       Float             @default(0)
+  currency            String
+  expectedCloseDate   DateTime
+  expectedStartDate   DateTime
+  expectedEndDate     DateTime?
+  accountManagerName  String
+  deliveryManagerName String
+  dealType            String?
+  notes               String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  account             Account           @relation(fields: [accountId], references: [id])
+  roles               OpportunityRole[]
+  sourceSows          Sow[]
+}
+
+model OpportunityRole {
+  id                    String      @id @default(cuid())
+  number                String      @unique
+  opportunityId         String
+  title                 String
+  skill                 String
+  subModule             String?
+  quantity              Int         @default(1)
+  engagementType        String?
+  experienceLevel       String?
+  startDate             DateTime?
+  duration              Int?
+  endDate               DateTime?
+  estimatedHours        Float?
+  billRate              Float?
+  costGuidance          Float?
+  allocationPercent     Int?
+  resourceIdentificationStatus String?
+  candidateResourceName String?
+  notes                 String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  opportunity           Opportunity @relation(fields: [opportunityId], references: [id])
+  sowRoles              SowRole[]
+}
+
+model Sow {
+  id                  String       @id @default(cuid())
+  number              String       @unique
+  accountId           String
+  sourceOpportunityId String?
+  name                String
+  billingModel        BillingModel
+  status              SowStatus
+  currency            String
+  startDate           DateTime
+  endDate             DateTime
+  contractValue       Float
+  visibleRevenue      Float        @default(0)
+  visibleCost         Float        @default(0)
+  grossMargin         Float        @default(0)
+  grossMarginPercent  Float        @default(0)
+  projectHealth       String?
+  projectManagerName  String
+  deliveryManagerName String
+  accountManagerName  String
+  parentSowReference  String?
+  createdFrom         String       @default("DIRECT")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  account             Account      @relation(fields: [accountId], references: [id])
+  sourceOpportunity   Opportunity? @relation(fields: [sourceOpportunityId], references: [id])
+  roles               SowRole[]
+  milestones          Milestone[]
+}
+
+model SowRole {
+  id                    String          @id @default(cuid())
+  number                String          @unique
+  sowId                 String
+  sourceOpportunityRoleId String?
+  title                 String
+  skill                 String
+  subModule             String?
+  quantity              Int             @default(1)
+  engagementType        String?
+  billingType           String?
+  billRate              Float?
+  costRate              Float?
+  startDate             DateTime?
+  duration              Int?
+  endDate               DateTime?
+  plannedAllocationPercent Int?
+  plannedHours          Float?
+  locationRequirement   String?
+  staffingPriority      String?
+  staffingStatus        String?
+  remarks               String?
+  measurementUnit       MeasurementUnit @default(HOURS)
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  sow                   Sow             @relation(fields: [sowId], references: [id])
+  sourceOpportunityRole OpportunityRole? @relation(fields: [sourceOpportunityRoleId], references: [id])
+  deployments           Deployment[]
+}
+
+model Deployment {
+  id              String           @id @default(cuid())
+  number          String           @unique
+  sowRoleId       String
+  resourceId      String
+  startDate       DateTime
+  endDate         DateTime
+  allocationPercent Int
+  status          DeploymentStatus
+  lockedCostRate  Float
+  lockedBillRate  Float?
+  billable        Boolean          @default(true)
+  sourceOfAssignment String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sowRole         SowRole          @relation(fields: [sowRoleId], references: [id])
+  resource        Resource         @relation(fields: [resourceId], references: [id])
+  actuals         Actual[]
+}
+
+model Actual {
+  id              String          @id @default(cuid())
+  number          String          @unique
+  deploymentId    String
+  month           DateTime
+  actualQuantity  Float
+  actualUnit      MeasurementUnit
+  remarks         String?
+  uploadBatchRef  String?
+  enteredBy       String?
+  enteredDate     DateTime        @default(now())
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deployment      Deployment      @relation(fields: [deploymentId], references: [id])
+
+  @@unique([deploymentId, month])
+}
+
+model Milestone {
+  id            String   @id @default(cuid())
+  number        String   @unique
+  sowId         String
+  name          String
+  sequence      Int
+  plannedDate   DateTime
+  plannedAmount Float
+  actualDate    DateTime?
+  actualAmount  Float?
+  invoiceDate   DateTime?
+  paymentDate   DateTime?
+  status        String
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sow           Sow      @relation(fields: [sowId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  number      String   @unique
+  entityName  String
+  recordId    String
+  actionType  String
+  changedFields String?
+  oldValue    String?
+  newValue    String?
+  actor       String
+  sourceScreen String?
+  importReference String?
+  createdAt   DateTime @default(now())
+}
