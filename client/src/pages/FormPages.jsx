@@ -357,12 +357,6 @@ export function ResourceFormPage() {
               <Field label="Location Type"><select value={form.locationType} onChange={(event) => setForm({ ...form, locationType: event.target.value })}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
               <Field label="Engagement Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}><option>Full-Time</option><option>Part-Time</option><option>Contractor</option><option>C2C</option></select></Field>
               <Field label="Engagement Status"><select value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value })}><option value="ACTIVE">Active</option><option value="ON_LEAVE">Unavailable</option><option value="SABBATICAL">Extended Unavailable</option><option value="INACTIVE">Inactive</option><option value="TERMINATED">Inactive - Closed</option><option value="EXITED">Inactive - Ended</option></select></Field>
-              <Field label="Reporting Manager">
-                <select value={form.reportingManager} onChange={(event) => setForm({ ...form, reportingManager: event.target.value })}>
-                  <option value="">Select</option>
-                  {reportingManagers.map((manager) => <option key={manager.id} value={manager.name}>{manager.name}</option>)}
-                </select>
-              </Field>
               <Field label="Primary SAP Module"><select value={form.primarySkill} onChange={(event) => setForm({ ...form, primarySkill: event.target.value, subModule: "", primarySubModules: [] })}>{skillOptions.map((skill) => <option key={skill.id}>{skill.name}</option>)}</select></Field>
               <Field label="Primary Sub-Modules">
                 <select multiple value={form.primarySubModules || []} onChange={(event) => setForm({ ...form, primarySubModules: selectedValues(event), subModule: selectedValues(event)[0] || "" })}>
@@ -370,6 +364,12 @@ export function ResourceFormPage() {
                     const value = subModuleName(item);
                     return <option key={value} value={value}>{value}</option>;
                   })}
+                </select>
+              </Field>
+              <Field label="Reporting Manager">
+                <select value={form.reportingManager} onChange={(event) => setForm({ ...form, reportingManager: event.target.value })}>
+                  <option value="">Select</option>
+                  {reportingManagers.map((manager) => <option key={manager.id} value={manager.name}>{manager.name}</option>)}
                 </select>
               </Field>
             </div>

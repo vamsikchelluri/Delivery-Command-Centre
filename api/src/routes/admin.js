@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
-import { addAudit, deleteRecord, getCollection, updateRecord, upsertRecord } from "../data/store.js";
+import { addAudit, addRecord, deleteRecord, getCollection, updateRecord, upsertRecord } from "../data/store.js";
+import { hashPassword } from "../lib/auth.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -11,6 +12,16 @@ function asyncRoute(handler) {
 
 function stripUndefined(record) {
   return Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
+}
+
+function sanitizeUser(user) {
+  if (!user) return user;
+  const { passwordHash: _passwordHash, temporaryPassword: _temporaryPassword, ...safeUser } = user;
+  return safeUser;
+}
+
+function sanitizeUsers(users) {
+  return users.map(sanitizeUser);
 }
 
 const postgresAdminCollections = {
@@ -193,7 +204,8 @@ const collections = {
       email: z.string().email(),
       role: z.string().min(2),
       canViewCost: z.boolean().default(false),
-      canViewMargin: z.boolean().default(false)
+      canViewMargin: z.boolean().default(false),
+      temporaryPassword: z.string().min(8).optional().or(z.literal(""))
     })
   }
 };
@@ -294,7 +306,8 @@ router.get("/:collection", asyncRoute(async (req, res) => {
     return res.json(await prisma[postgresConfig.model].findMany({ orderBy: postgresConfig.orderBy }));
   }
 
-  return res.json(getCollection(req.params.collection));
+  const rows = getCollection(req.params.collection);
+  return res.json(req.params.collection === "users" ? sanitizeUsers(rows) : rows);
 }));
 
 router.post("/:collection", asyncRoute(async (req, res) => {
@@ -311,11 +324,43 @@ router.post("/:collection", asyncRoute(async (req, res) => {
   if (req.params.collection === "users" && !(await validateUserRole(parsed.data.role))) {
     return res.status(400).json({ message: "User role must be selected from active Admin roles." });
   }
+  if (req.params.collection === "users" && !parsed.data.temporaryPassword) {
+    return res.status(400).json({ message: "Temporary password is required when creating a user." });
+  }
+  if (req.params.collection === "users" && getCollection("users").some((user) => user.email === parsed.data.email)) {
+    return res.status(400).json({ message: "A user with this email already exists." });
+  }
+
+  const payload = { ...parsed.data };
+  if (req.params.collection === "users") {
+    payload.passwordHash = await hashPassword(parsed.data.temporaryPassword);
+    payload.number = payload.number || `USR-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+    delete payload.temporaryPassword;
+  }
 
   const postgresConfig = postgresAdminCollections[req.params.collection];
+  if (req.params.collection === "users") {
+    const now = new Date().toISOString();
+    const record = addRecord("users", {
+      id: crypto.randomUUID(),
+      createdAt: now,
+      updatedAt: now,
+      ...payload
+    });
+    addAudit({
+      entityName: "users",
+      recordId: record.id,
+      actionType: "CREATE",
+      actor: req.user?.name || "Unknown",
+      newValue: sanitizeUser(record),
+      sourceScreen: "Admin"
+    });
+    return res.status(201).json(sanitizeUser(record));
+  }
+
   if (postgresConfig) {
     const record = await prisma[postgresConfig.model].create({
-      data: stripUndefined(parsed.data)
+      data: stripUndefined(payload)
     });
     await addAuditToPostgres({
       entityName: req.params.collection,
@@ -328,8 +373,8 @@ router.post("/:collection", asyncRoute(async (req, res) => {
     return res.status(201).json(record);
   }
 
-  const record = upsertRecord(req.params.collection, parsed.data, req.user?.name || "Unknown", "Admin");
-  return res.status(201).json(record);
+  const record = upsertRecord(req.params.collection, payload, req.user?.name || "Unknown", "Admin");
+  return res.status(201).json(req.params.collection === "users" ? sanitizeUser(record) : record);
 }));
 
 router.patch("/:collection/:id", asyncRoute(async (req, res) => {
@@ -351,9 +396,16 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
     if (req.params.collection === "users" && parsed.data.role && !(await validateUserRole(parsed.data.role))) {
       return res.status(400).json({ message: "User role must be selected from active Admin roles." });
     }
+    const payload = { ...parsed.data };
+    if (req.params.collection === "users") {
+      if (payload.temporaryPassword) {
+        payload.passwordHash = await hashPassword(payload.temporaryPassword);
+      }
+      delete payload.temporaryPassword;
+    }
     const updated = await prisma[postgresConfig.model].update({
       where: { id: req.params.id },
-      data: stripUndefined(parsed.data)
+      data: stripUndefined(payload)
     });
     await addAuditToPostgres({
       entityName: req.params.collection,
@@ -379,19 +431,30 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
   if (req.params.collection === "users" && parsed.data.role && !(await validateUserRole(parsed.data.role))) {
     return res.status(400).json({ message: "User role must be selected from active Admin roles." });
   }
+  if (req.params.collection === "users" && parsed.data.email && getCollection("users").some((user) => user.email === parsed.data.email && user.id !== req.params.id)) {
+    return res.status(400).json({ message: "A user with this email already exists." });
+  }
 
-  const updated = updateRecord(req.params.collection, req.params.id, parsed.data);
+  const payload = { ...parsed.data };
+  if (req.params.collection === "users") {
+    if (payload.temporaryPassword) {
+      payload.passwordHash = await hashPassword(payload.temporaryPassword);
+    }
+    delete payload.temporaryPassword;
+  }
+
+  const updated = updateRecord(req.params.collection, req.params.id, payload);
   addAudit({
     entityName: req.params.collection,
     recordId: req.params.id,
     actionType: "UPDATE",
     actor: req.user?.name || "Unknown",
-    oldValue: existing,
-    newValue: updated,
+    oldValue: req.params.collection === "users" ? sanitizeUser(existing) : existing,
+    newValue: req.params.collection === "users" ? sanitizeUser(updated) : updated,
     sourceScreen: "Admin"
   });
 
-  return res.json(updated);
+  return res.json(req.params.collection === "users" ? sanitizeUser(updated) : updated);
 }));
 
 router.delete("/:collection/:id", asyncRoute(async (req, res) => {
@@ -430,12 +493,12 @@ router.delete("/:collection/:id", asyncRoute(async (req, res) => {
     recordId: req.params.id,
     actionType: "DELETE",
     actor: req.user?.name || "Unknown",
-    oldValue: existing,
-    newValue: deleted,
+    oldValue: req.params.collection === "users" ? sanitizeUser(existing) : existing,
+    newValue: req.params.collection === "users" ? sanitizeUser(deleted) : deleted,
     sourceScreen: "Admin"
   });
 
-  return res.json(deleted);
+  return res.json(req.params.collection === "users" ? sanitizeUser(deleted) : deleted);
 }));
 
 router.get("/audit/logs", asyncRoute(async (_req, res) => {

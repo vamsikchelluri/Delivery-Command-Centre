@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { apiFetch, login } from "./lib/api";
+import { apiFetch, login, patchJson } from "./lib/api";
+import { Field, Modal } from "./components.jsx";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { ResourcesPage } from "./pages/ResourcesPage.jsx";
@@ -66,6 +67,7 @@ function LoginScreen({ onAuthenticated }) {
 
 function Shell() {
   const user = JSON.parse(localStorage.getItem("dcc-user") || "{}");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const navItems = [
     { to: "/", label: "Command Center" },
     { to: "/accounts", label: "Clients" },
@@ -95,6 +97,7 @@ function Shell() {
         <div className="profile-card">
           <strong>{user.name}</strong>
           <span>{user.role}</span>
+          <button className="tiny-button secondary" type="button" onClick={() => setShowPasswordModal(true)}>Change Password</button>
         </div>
       </aside>
       <main className="main-content">
@@ -144,7 +147,62 @@ function Shell() {
           </Routes>
         </ErrorBoundary>
       </main>
+      {showPasswordModal ? <ChangePasswordModal onClose={() => setShowPasswordModal(false)} /> : null}
     </div>
+  );
+}
+
+function ChangePasswordModal({ onClose }) {
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  function update(key, value) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function save(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+
+    if (form.newPassword !== form.confirmPassword) {
+      setError("New password and confirmation do not match.");
+      return;
+    }
+
+    try {
+      await patchJson("/auth/change-password", {
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword
+      });
+      setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setMessage("Password changed.");
+    } catch (saveError) {
+      setError(saveError.message || "Unable to change password.");
+    }
+  }
+
+  return (
+    <Modal title="Change Password" onClose={onClose}>
+      <form className="form-grid modal-form" onSubmit={save}>
+        {error ? <div className="error-banner">{error}</div> : null}
+        {message ? <div className="success-banner">{message}</div> : null}
+        <Field label="Current Password">
+          <input type="password" value={form.currentPassword} onChange={(event) => update("currentPassword", event.target.value)} required />
+        </Field>
+        <Field label="New Password">
+          <input type="password" minLength="8" value={form.newPassword} onChange={(event) => update("newPassword", event.target.value)} required />
+        </Field>
+        <Field label="Confirm New Password">
+          <input type="password" minLength="8" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} required />
+        </Field>
+        <div className="save-bar inline-save-bar">
+          <button className="secondary-button" type="button" onClick={onClose}>Cancel</button>
+          <button type="submit">Save Password</button>
+        </div>
+      </form>
+    </Modal>
   );
 }
 

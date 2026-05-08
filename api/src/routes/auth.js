@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { z } from "zod";
-import { createAccessToken, verifyPassword } from "../lib/auth.js";
+import { createAccessToken, hashPassword, verifyPassword } from "../lib/auth.js";
 import { requireAuth } from "../middleware/auth.js";
 import { hydrateUserPermissions, hydrateUserPermissionsFromDb } from "../lib/permissions.js";
-import { getCollection } from "../data/store.js";
+import { getCollection, updateRecord } from "../data/store.js";
 
 const router = Router();
 
@@ -79,6 +79,35 @@ router.get("/me", requireAuth, asyncRoute(async (req, res) => {
     canViewMargin: authorizedUser.canViewMargin,
     permissions: authorizedUser.permissions
   });
+}));
+
+router.patch("/change-password", requireAuth, asyncRoute(async (req, res) => {
+  const schema = z.object({
+    currentPassword: z.string().min(3),
+    newPassword: z.string().min(8)
+  });
+  const parsed = schema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid password payload", issues: parsed.error.issues });
+  }
+
+  const user = getCollection("users").find((item) => item.id === req.user.sub);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  const valid = await verifyPassword(parsed.data.currentPassword, user.passwordHash);
+  if (!valid) {
+    return res.status(401).json({ message: "Current password is incorrect" });
+  }
+
+  updateRecord("users", user.id, {
+    passwordHash: await hashPassword(parsed.data.newPassword),
+    passwordChangedAt: new Date().toISOString()
+  });
+
+  return res.json({ ok: true });
 }));
 
 export default router;

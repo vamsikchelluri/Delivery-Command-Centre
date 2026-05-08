@@ -698,6 +698,15 @@ function AdminForm({ collection, record, onClose, onSaved }) {
                   <option key={currency.id || currency.code} value={currency.code}>{currency.code} - {currency.name}</option>
                 ))}
               </select>
+            ) : collection === "users" && key === "temporaryPassword" ? (
+              <input
+                type="password"
+                minLength={record.id ? undefined : 8}
+                placeholder={record.id ? "Leave blank to keep current password" : "Minimum 8 characters"}
+                required={!record.id}
+                value={form[key]}
+                onChange={(event) => update(key, event.target.value)}
+              />
             ) : key === "locationType" ? (
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
                 <option>Offshore</option>
@@ -760,7 +769,7 @@ function normalizeForm(collection, record) {
   if (collection === "systemConfigs") return { key: record.key || "", value: record.value || "", description: record.description || "" };
   if (collection === "numberRanges") return { objectType: record.objectType || "", prefix: record.prefix || "", sequenceLength: String(record.sequenceLength ?? 6), nextNumber: String(record.nextNumber ?? 1), includeYear: String(record.includeYear ?? true), active: String(record.active ?? true) };
   if (collection === "appRoles") return { name: record.name || "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false), active: String(record.active ?? true) };
-  return { number: record.number || "", name: record.name || "", email: record.email || "", role: record.role || "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false) };
+  return { number: record.number || "", name: record.name || "", email: record.email || "", role: record.role || "", temporaryPassword: "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false) };
 }
 
 function denormalizeForm(collection, form) {
