@@ -765,6 +765,15 @@
       "nextNumber": 2,
       "includeYear": true,
       "active": true
+    },
+    {
+      "id": "nr_usr",
+      "objectType": "User",
+      "prefix": "USR",
+      "sequenceLength": 6,
+      "nextNumber": 2,
+      "includeYear": true,
+      "active": true
     }
   ],
   "appRoles": [

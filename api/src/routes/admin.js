@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { addAudit, addRecord, deleteRecord, getCollection, updateRecord, upsertRecord } from "../data/store.js";
+import { addAudit, addRecord, deleteRecord, getCollection, nextDocumentNumber, updateRecord, upsertRecord } from "../data/store.js";
 import { hashPassword } from "../lib/auth.js";
 import { prisma } from "../prisma.js";
 
@@ -334,7 +334,7 @@ router.post("/:collection", asyncRoute(async (req, res) => {
   const payload = { ...parsed.data };
   if (req.params.collection === "users") {
     payload.passwordHash = await hashPassword(parsed.data.temporaryPassword);
-    payload.number = payload.number || `USR-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+    payload.number = payload.number || nextDocumentNumber("User");
     delete payload.temporaryPassword;
   }
 

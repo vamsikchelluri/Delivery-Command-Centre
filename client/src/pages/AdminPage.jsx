@@ -602,8 +602,9 @@ function getColumns(collection, setEditing) {
     return [
       { key: "objectType", label: "Object" },
       { key: "prefix", label: "Prefix" },
+      { key: "latestIssued", label: "Latest Issued", render: (row) => formatRangeNumber(row, -1) },
+      { key: "nextNumber", label: "Next Number", render: (row) => formatRangeNumber(row) },
       { key: "sequenceLength", label: "Length" },
-      { key: "nextNumber", label: "Next" },
       { key: "includeYear", label: "Year", render: (row) => String(row.includeYear) },
       editColumn
     ];
@@ -635,6 +636,15 @@ function getColumns(collection, setEditing) {
     { key: "recordId", label: "Record ID" },
     { key: "createdAt", label: "Time", render: (row) => row.createdAt?.slice(0, 16) }
   ];
+}
+
+function formatRangeNumber(row, offset = 0) {
+  const value = Number(row.nextNumber || 0) + offset;
+  if (value <= 0) {
+    return "-";
+  }
+  const year = row.includeYear ? `${new Date().getFullYear()}-` : "";
+  return `${row.prefix}-${year}${String(value).padStart(Number(row.sequenceLength || 6), "0")}`;
 }
 
 function AdminForm({ collection, record, onClose, onSaved }) {

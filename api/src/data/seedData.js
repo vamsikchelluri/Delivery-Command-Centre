@@ -176,6 +176,7 @@ export const seedData = {
     { id: "nr_sow", objectType: "SOW", prefix: "SOW", sequenceLength: 6, nextNumber: 2, includeYear: true, active: true },
     { id: "nr_dpl", objectType: "Deployment", prefix: "DPL", sequenceLength: 6, nextNumber: 3, includeYear: true, active: true },
     { id: "nr_act", objectType: "Actual", prefix: "ACT", sequenceLength: 6, nextNumber: 3, includeYear: true, active: true },
+    { id: "nr_usr", objectType: "User", prefix: "USR", sequenceLength: 6, nextNumber: 5, includeYear: true, active: true },
     { id: "nr_aud", objectType: "Audit", prefix: "AUD", sequenceLength: 6, nextNumber: 2, includeYear: true, active: true }
   ],
   appRoles,
