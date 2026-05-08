@@ -478,7 +478,7 @@ export function SowWorkspacePage() {
                 <Field label="Project Manager"><input value={form.projectManagerName} onChange={(event) => setForm({ ...form, projectManagerName: event.target.value })} /></Field>
                 <Field label="Delivery Manager"><input value={form.deliveryManagerName} onChange={(event) => setForm({ ...form, deliveryManagerName: event.target.value })} /></Field>
                 <Field label="Account Manager"><input value={form.accountManagerName} onChange={(event) => setForm({ ...form, accountManagerName: event.target.value })} /></Field>
-                <Field label="Target Margin %"><input type="number" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
+                <Field label="Target Margin %"><input type="number" step="any" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
               </div>
             ) : (
               <div className="info-grid">
@@ -498,13 +498,13 @@ export function SowWorkspacePage() {
               <div className="form-grid two-up">
                 <Field label="Start Date"><input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></Field>
                 <Field label="End Date"><input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></Field>
-                <Field label="Contract Value"><input type="number" value={form.contractValue} onChange={(event) => setForm({ ...form, contractValue: event.target.value })} /></Field>
-                <Field label="Visible Revenue"><input type="number" value={form.visibleRevenue} onChange={(event) => setForm({ ...form, visibleRevenue: event.target.value })} /></Field>
-                <Field label="Visible Cost"><input type="number" value={form.visibleCost} onChange={(event) => setForm({ ...form, visibleCost: event.target.value })} /></Field>
+                <Field label="Contract Value"><input type="number" step="any" value={form.contractValue} onChange={(event) => setForm({ ...form, contractValue: event.target.value })} /></Field>
+                <Field label="Visible Revenue"><input type="number" step="any" value={form.visibleRevenue} onChange={(event) => setForm({ ...form, visibleRevenue: event.target.value })} /></Field>
+                <Field label="Visible Cost"><input type="number" step="any" value={form.visibleCost} onChange={(event) => setForm({ ...form, visibleCost: event.target.value })} /></Field>
                 <Field label="Currency"><input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} /></Field>
                 <Field label="T&E Allowed"><select value={String(form.travelExpensesAllowed)} onChange={(event) => setForm({ ...form, travelExpensesAllowed: event.target.value === "true" })}><option value="false">No</option><option value="true">Yes</option></select></Field>
                 <Field label="T&E Billing Type"><select value={form.travelExpensesBillingType} onChange={(event) => setForm({ ...form, travelExpensesBillingType: event.target.value })}><option>Included</option><option>Pass-through</option><option>Capped</option><option>Not Billable</option></select></Field>
-                <Field label="T&E Cap Amount"><input type="number" value={form.travelExpensesCapAmount} onChange={(event) => setForm({ ...form, travelExpensesCapAmount: event.target.value })} /></Field>
+                <Field label="T&E Cap Amount"><input type="number" step="any" value={form.travelExpensesCapAmount} onChange={(event) => setForm({ ...form, travelExpensesCapAmount: event.target.value })} /></Field>
                 <Field label="T&E Approval Required"><select value={String(form.travelExpensesApprovalRequired)} onChange={(event) => setForm({ ...form, travelExpensesApprovalRequired: event.target.value === "true" })}><option value="false">No</option><option value="true">Yes</option></select></Field>
                 <Field label="T&E Notes"><textarea rows="2" value={form.travelExpensesNotes} onChange={(event) => setForm({ ...form, travelExpensesNotes: event.target.value })} /></Field>
               </div>
@@ -1041,7 +1041,7 @@ function DeploymentPlanEditor({ actualsPlan, onSaved }) {
                           <input
                             aria-label={`${planRow.roleTitle} ${formatMonth(month)} planned quantity`}
                             min="0"
-                            type="number"
+                            type="number" step="any"
                             value={draft.plannedQuantity ?? 0}
                             onChange={(event) => updateDraft(monthRow.id, "plannedQuantity", event.target.value)}
                           />

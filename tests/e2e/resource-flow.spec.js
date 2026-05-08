@@ -26,29 +26,30 @@ test("resource flow creates an offshore resource with secondary skills and regis
   await expect(secondarySubModule).toBeVisible();
   await secondarySubModule.selectOption({ label: "S/4 Upgrade" });
 
-  await page.getByRole("button", { name: "Employment and Compensation" }).click();
-  await controlByLabel(page, "Location").fill("Chennai");
+  await page.getByRole("button", { name: "Resource Planning and Costing" }).click();
+  await page.getByRole("button", { name: "Resource Profile" }).click();
+  await selectByLabel(page, "Location", "India");
   await selectByLabel(page, "Location Type", "Offshore");
-  await selectByLabel(page, "Employment Type", "Full-Time");
-  await expect(controlByLabel(page, "Visa / Work Authorization")).toHaveValue("NA (Offshore)");
-  await expect(controlByLabel(page, "Compensation Input Type")).toHaveValue("Annual CTC");
-  await controlByLabel(page, "Compensation Value").fill("1800000");
+  await selectByLabel(page, "Engagement Type", "Full-Time");
+  await page.getByRole("button", { name: "Resource Planning and Costing" }).click();
+  await expect(controlByLabel(page, "Costing Type")).toHaveValue("Annual CTC");
+  await controlByLabel(page, "Cost Basis Amount").fill("1800000");
   await page.getByRole("button", { name: "Save Resource" }).click();
 
   await expect(page.getByPlaceholder("Search name, skill...")).toBeVisible();
   await page.getByPlaceholder("Search name, skill...").fill(firstName);
   const row = await rowByText(page, fullName);
   await expect(row).toContainText("SAP FICO");
-  await expect(row).toContainText("AVAILABLE");
+  await expect(row).toContainText("Available");
 
   const filters = page.locator(".register-filter-bar select");
-  await filters.nth(0).selectOption({ label: "Chennai" });
+  await filters.nth(0).selectOption({ label: "India" });
   await filters.nth(1).selectOption({ label: "Full-Time" });
-  await filters.nth(2).selectOption({ label: "AVAILABLE" });
+  await filters.nth(2).selectOption({ label: "Available" });
   await expect(row).toBeVisible();
 
   await row.getByRole("button", { name: "View" }).click();
-  await page.getByRole("button", { name: "Identity and Skills" }).click();
+  await page.getByRole("button", { name: "Resource Profile" }).click();
   await expect(page.getByText("SAP Basis / S/4 Upgrade")).toBeVisible();
   await expect(page.getByRole("heading", { name: fullName })).toBeVisible();
 
@@ -62,7 +63,7 @@ test("resource flow creates an offshore resource with secondary skills and regis
       primarySubModule: "GL",
       secondarySkill: "SAP Basis",
       secondarySubModule: "S/4 Upgrade",
-      location: "Chennai",
+      location: "India",
       locationType: "Offshore",
       employmentType: "Full-Time",
       compensationValue: 1800000
@@ -70,7 +71,7 @@ test("resource flow creates an offshore resource with secondary skills and regis
     outputData: {
       expectedHeading: fullName,
       expectedSecondarySkill: "SAP Basis / S/4 Upgrade",
-      expectedDeliveryStatus: "AVAILABLE"
+      expectedDeliveryStatus: "Available"
     }
   });
 });

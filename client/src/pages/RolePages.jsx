@@ -300,7 +300,7 @@ export function OpportunityRoleFormPage() {
             </Field>
             <Field label="Duration (Weeks)">
               <input
-                type="number"
+                type="number" step="any"
                 min="1"
                 value={form.duration}
                 onChange={(event) => setForm({
@@ -310,12 +310,12 @@ export function OpportunityRoleFormPage() {
                 })}
               />
             </Field>
-            <Field label="Estimated Hours (Per Resource)"><input type="number" min="0" value={form.estimatedHours} onChange={(event) => setForm({ ...form, estimatedHours: event.target.value })} /></Field>
-            <Field label="Bill Rate"><input type="number" min="0" value={form.billRate} onChange={(event) => setForm({ ...form, billRate: event.target.value })} /></Field>
-            <Field label="Target Margin %"><input type="number" min="0" max="100" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
+            <Field label="Estimated Hours (Per Resource)"><input type="number" step="any" min="0" value={form.estimatedHours} onChange={(event) => setForm({ ...form, estimatedHours: event.target.value })} /></Field>
+            <Field label="Bill Rate"><input type="number" step="any" min="0" value={form.billRate} onChange={(event) => setForm({ ...form, billRate: event.target.value })} /></Field>
+            <Field label="Target Margin %"><input type="number" step="any" min="0" max="100" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
             <Field label="Loaded Cost Guidance"><input value={form.loadedCostGuidance} readOnly /></Field>
             <Field label="Base Cost Guidance"><input value={form.baseCostGuidance} readOnly /></Field>
-            <Field label="Allocation %"><input type="number" min="0" max="150" value={form.allocationPercent} onChange={(event) => setForm({ ...form, allocationPercent: event.target.value })} /></Field>
+            <Field label="Allocation %"><input type="number" step="any" min="0" max="150" value={form.allocationPercent} onChange={(event) => setForm({ ...form, allocationPercent: event.target.value })} /></Field>
             <Field label="Notes"><textarea rows="3" value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} /></Field>
           </div>
         </Section>
@@ -550,7 +550,7 @@ export function SowRoleFormPage() {
                 </Field>
                 <Field label="Duration (Weeks)">
                   <input
-                    type="number"
+                    type="number" step="any"
                     min="1"
                     value={form.duration}
                     onChange={(event) => setForm({
@@ -560,10 +560,10 @@ export function SowRoleFormPage() {
                     })}
                   />
                 </Field>
-                <Field label="Planned Allocation %"><input type="number" min="0" max="150" value={form.plannedAllocationPercent} onChange={(event) => setForm({ ...form, plannedAllocationPercent: event.target.value })} /></Field>
-                <Field label="Planned Hours (Per Resource)"><input type="number" min="0" value={form.plannedHours} onChange={(event) => setForm({ ...form, plannedHours: event.target.value })} /></Field>
-                <Field label="Bill Rate"><input type="number" min="0" value={form.billRate} onChange={(event) => setForm({ ...form, billRate: event.target.value })} /></Field>
-                <Field label="Target Margin %"><input type="number" min="0" max="100" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
+                <Field label="Planned Allocation %"><input type="number" step="any" min="0" max="150" value={form.plannedAllocationPercent} onChange={(event) => setForm({ ...form, plannedAllocationPercent: event.target.value })} /></Field>
+                <Field label="Planned Hours (Per Resource)"><input type="number" step="any" min="0" value={form.plannedHours} onChange={(event) => setForm({ ...form, plannedHours: event.target.value })} /></Field>
+                <Field label="Bill Rate"><input type="number" step="any" min="0" value={form.billRate} onChange={(event) => setForm({ ...form, billRate: event.target.value })} /></Field>
+                <Field label="Target Margin %"><input type="number" step="any" min="0" max="100" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
                 <Field label="Loaded Cost Guidance"><input value={form.loadedCostGuidance} readOnly /></Field>
                 <Field label="Base Cost Guidance"><input value={form.baseCostGuidance} readOnly /></Field>
                 <Field label="Staffing Status">

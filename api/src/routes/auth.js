@@ -2,11 +2,16 @@ import { Router } from "express";
 import { z } from "zod";
 import { createAccessToken, verifyPassword } from "../lib/auth.js";
 import { requireAuth } from "../middleware/auth.js";
+import { hydrateUserPermissionsFromDb } from "../lib/permissions.js";
 import { getCollection } from "../data/store.js";
 
 const router = Router();
 
-router.post("/login", async (req, res) => {
+function asyncRoute(handler) {
+  return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
+router.post("/login", asyncRoute(async (req, res) => {
   const schema = z.object({
     email: z.string().email(),
     password: z.string().min(3)
@@ -30,36 +35,41 @@ router.post("/login", async (req, res) => {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  const token = createAccessToken(user);
+  const authorizedUser = await hydrateUserPermissionsFromDb(user);
+  const token = createAccessToken(authorizedUser);
 
   return res.json({
     token,
     user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      canViewCost: user.canViewCost,
-      canViewMargin: user.canViewMargin
+      id: authorizedUser.id,
+      name: authorizedUser.name,
+      email: authorizedUser.email,
+      role: authorizedUser.role,
+      canViewCost: authorizedUser.canViewCost,
+      canViewMargin: authorizedUser.canViewMargin,
+      permissions: authorizedUser.permissions
     }
   });
-});
+}));
 
-router.get("/me", requireAuth, async (req, res) => {
+router.get("/me", requireAuth, asyncRoute(async (req, res) => {
   const user = getCollection("users").find((item) => item.id === req.user.sub);
 
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
 
+  const authorizedUser = await hydrateUserPermissionsFromDb(user);
+
   return res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    canViewCost: user.canViewCost,
-    canViewMargin: user.canViewMargin
+    id: authorizedUser.id,
+    name: authorizedUser.name,
+    email: authorizedUser.email,
+    role: authorizedUser.role,
+    canViewCost: authorizedUser.canViewCost,
+    canViewMargin: authorizedUser.canViewMargin,
+    permissions: authorizedUser.permissions
   });
-});
+}));
 
 export default router;

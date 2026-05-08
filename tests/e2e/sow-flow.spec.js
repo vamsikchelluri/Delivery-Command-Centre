@@ -21,11 +21,11 @@ test("sow flow persists commercials, adds a role, and shows role-aware assignmen
   await controlByLabel(page, "Contact Number").fill("9000000002");
   await selectByLabel(page, "Primary SAP Module", "SAP Basis");
   await selectByLabel(page, "Primary Sub-Module", "S/4 Upgrade");
-  await page.getByRole("button", { name: "Employment and Compensation" }).click();
-  await controlByLabel(page, "Location").fill("New York");
+  await selectByLabel(page, "Location", "USA");
   await selectByLabel(page, "Location Type", "Onsite");
-  await selectByLabel(page, "Employment Type", "Full-Time");
-  await controlByLabel(page, "Compensation Value").fill("120000");
+  await selectByLabel(page, "Engagement Type", "Full-Time");
+  await page.getByRole("button", { name: "Resource Planning and Costing" }).click();
+  await controlByLabel(page, "Cost Basis Amount").fill("120000");
   await page.getByRole("button", { name: "Save Resource" }).click();
 
   await openNav(page, "SOWs");
@@ -67,7 +67,7 @@ test("sow flow persists commercials, adds a role, and shows role-aware assignmen
   await selectByLabel(page, "Role Location", "Onsite");
   await selectByLabel(page, "Engagement Type", "Full-Time");
   await controlByLabel(page, "Start Date").fill("2026-07-01");
-  await controlByLabel(page, "Duration (Months)").fill("3");
+  await controlByLabel(page, "Duration (Weeks)").fill("12");
   await controlByLabel(page, "Planned Allocation %").fill("100");
   await controlByLabel(page, "Planned Hours (Per Resource)").fill("400");
   await controlByLabel(page, "Bill Rate").fill("120");
@@ -87,7 +87,7 @@ test("sow flow persists commercials, adds a role, and shows role-aware assignmen
   await selectByLabel(page, "Assign Resource", `${resourceFullName} / SAP Basis / Onsite`);
   await page.getByRole("button", { name: "Save and Assign" }).click();
 
-  await page.getByRole("button", { name: "Deployments" }).click();
+  await page.getByRole("button", { name: "Assignments" }).click();
   await expect(page.getByText(resourceFullName)).toBeVisible();
 
   await attachScenarioEvidence(page, testInfo, {

@@ -10,7 +10,8 @@ export function createAccessToken(user) {
       name: user.name,
       role: user.role,
       canViewCost: user.canViewCost,
-      canViewMargin: user.canViewMargin
+      canViewMargin: user.canViewMargin,
+      permissions: user.permissions || []
     },
     config.jwtSecret,
     { expiresIn: "8h" }

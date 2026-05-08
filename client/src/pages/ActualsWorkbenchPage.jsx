@@ -271,7 +271,7 @@ function DeploymentMonthEditor({ deploymentRow, onSaved }) {
                 <td>{formatQuantity(row.plannedQuantity, row.actualUnit)}</td>
                 <td>
                   <input
-                    type="number"
+                    type="number" step="any"
                     value={draft.actualQuantity}
                     onChange={(event) =>
                       setDrafts((current) => ({

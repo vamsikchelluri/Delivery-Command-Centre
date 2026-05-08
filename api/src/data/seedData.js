@@ -1,3 +1,60 @@
+const permissionFeatures = [
+  { id: "feature_command_center", key: "commandCenter", name: "Command Center", category: "Navigation", actions: ["view"] },
+  { id: "feature_clients", key: "clients", name: "Clients", category: "Core", actions: ["view", "create", "edit", "delete", "export"] },
+  { id: "feature_resources", key: "resources", name: "Resources", category: "Core", actions: ["view", "create", "edit", "delete", "export"] },
+  { id: "feature_resource_costing", key: "resourceCosting", name: "Resource Costing", category: "Sensitive", actions: ["view", "edit"] },
+  { id: "feature_opportunities", key: "opportunities", name: "Pipeline", category: "Core", actions: ["view", "create", "edit", "delete", "export"] },
+  { id: "feature_sows", key: "sows", name: "SOWs", category: "Core", actions: ["view", "create", "edit", "delete", "export"] },
+  { id: "feature_sow_financials", key: "sowFinancials", name: "SOW Financials", category: "Sensitive", actions: ["view", "viewCost", "viewMargin", "export"] },
+  { id: "feature_actuals", key: "actuals", name: "Actuals", category: "Delivery", actions: ["view", "create", "edit", "export"] },
+  { id: "feature_resource_planning", key: "resourcePlanning", name: "Resource Planning", category: "Delivery", actions: ["view", "export"] },
+  { id: "feature_financial_cockpit", key: "financialCockpit", name: "Financial Cockpit", category: "Finance", actions: ["view", "export"] },
+  { id: "feature_attachments", key: "attachments", name: "Attachments", category: "Core", actions: ["view", "create", "edit", "delete"] },
+  { id: "feature_master_data", key: "masterData", name: "Master Data", category: "Admin", actions: ["view", "create", "edit", "delete"] },
+  { id: "feature_audit_logs", key: "auditLogs", name: "Audit Logs", category: "Admin", actions: ["view", "export"] },
+  { id: "feature_admin", key: "admin", name: "Admin", category: "Admin", actions: ["view", "create", "edit", "delete"] }
+];
+
+const defaultRoleActions = {
+  "Super Admin": ["*"],
+  COO: ["*"],
+  "Vice President": ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "attachments:*", "auditLogs:*"],
+  Director: ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "attachments:*", "auditLogs:*"],
+  "Delivery Manager": ["commandCenter:view", "clients:view", "resources:*", "resourceCosting:view", "opportunities:view", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:view", "attachments:*", "auditLogs:view"],
+  "Project Manager": ["commandCenter:view", "clients:view", "resources:view", "opportunities:view", "sows:view", "actuals:*", "resourcePlanning:view", "attachments:view"],
+  "Account Manager": ["commandCenter:view", "clients:*", "resources:view", "opportunities:*", "sows:view", "sowFinancials:view", "attachments:view"],
+  "Finance Viewer": ["commandCenter:view", "clients:view", "resources:view", "resourceCosting:view", "opportunities:view", "sows:view", "sowFinancials:*", "actuals:view", "resourcePlanning:view", "financialCockpit:*", "attachments:view", "auditLogs:view"]
+};
+
+function actionAllowed(roleName, featureKey, action) {
+  const grants = defaultRoleActions[roleName] || [];
+  return grants.includes("*") || grants.includes(`${featureKey}:*`) || grants.includes(`${featureKey}:${action}`);
+}
+
+function buildDefaultRolePermissions(roles) {
+  return roles.flatMap((role) => permissionFeatures.flatMap((feature) =>
+    feature.actions.map((action) => ({
+      id: `perm_${role.id}_${feature.key}_${action}`.replace(/[^a-zA-Z0-9_]/g, "_"),
+      roleId: role.id,
+      roleName: role.name,
+      featureKey: feature.key,
+      action,
+      allowed: actionAllowed(role.name, feature.key, action)
+    }))
+  ));
+}
+
+const appRoles = [
+  { id: "role_coo", name: "COO", canViewCost: true, canViewMargin: true, active: true },
+  { id: "role_vp", name: "Vice President", canViewCost: true, canViewMargin: true, active: true },
+  { id: "role_director", name: "Director", canViewCost: true, canViewMargin: true, active: true },
+  { id: "role_dm", name: "Delivery Manager", canViewCost: true, canViewMargin: true, active: true },
+  { id: "role_pm", name: "Project Manager", canViewCost: false, canViewMargin: false, active: true },
+  { id: "role_am", name: "Account Manager", canViewCost: true, canViewMargin: false, active: true },
+  { id: "role_fin", name: "Finance Viewer", canViewCost: true, canViewMargin: true, active: true },
+  { id: "role_admin", name: "Super Admin", canViewCost: true, canViewMargin: true, active: true }
+];
+
 export const seedData = {
   skills: [
     {
@@ -121,15 +178,9 @@ export const seedData = {
     { id: "nr_act", objectType: "Actual", prefix: "ACT", sequenceLength: 6, nextNumber: 3, includeYear: true, active: true },
     { id: "nr_aud", objectType: "Audit", prefix: "AUD", sequenceLength: 6, nextNumber: 2, includeYear: true, active: true }
   ],
-  appRoles: [
-    { id: "role_coo", name: "COO", canViewCost: true, canViewMargin: true, active: true },
-    { id: "role_vp", name: "Vice President", canViewCost: true, canViewMargin: true, active: true },
-    { id: "role_dm", name: "Delivery Manager", canViewCost: true, canViewMargin: true, active: true },
-    { id: "role_pm", name: "Project Manager", canViewCost: false, canViewMargin: false, active: true },
-    { id: "role_am", name: "Account Manager", canViewCost: true, canViewMargin: false, active: true },
-    { id: "role_fin", name: "Finance Viewer", canViewCost: true, canViewMargin: true, active: true },
-    { id: "role_admin", name: "Super Admin", canViewCost: true, canViewMargin: true, active: true }
-  ],
+  appRoles,
+  permissionFeatures,
+  rolePermissions: buildDefaultRolePermissions(appRoles),
   accounts: [
     {
       id: "acc_1",
@@ -158,7 +209,7 @@ export const seedData = {
       number: "USR-2026-000001",
       name: "Aarav COO",
       email: "coo@dcc.local",
-      passwordHash: "$2a$10$LcG5kv4uslIDQ70wdluas.ZAdXijUns2xzwiw6UK.MJjPbH1WJkRO",
+      passwordHash: "$2a$10$50qZJUFiRVc5jmUzE8OoEem3G7esTWvvPmRdQ3ZtrBPGkf644BVyS",
       role: "COO",
       canViewCost: true,
       canViewMargin: true,
@@ -170,7 +221,7 @@ export const seedData = {
       number: "USR-2026-000002",
       name: "Divya Delivery",
       email: "dm@dcc.local",
-      passwordHash: "$2a$10$LcG5kv4uslIDQ70wdluas.ZAdXijUns2xzwiw6UK.MJjPbH1WJkRO",
+      passwordHash: "$2a$10$50qZJUFiRVc5jmUzE8OoEem3G7esTWvvPmRdQ3ZtrBPGkf644BVyS",
       role: "Delivery Manager",
       canViewCost: true,
       canViewMargin: true,
@@ -182,7 +233,7 @@ export const seedData = {
       number: "USR-2026-000003",
       name: "Rohan Account",
       email: "am@dcc.local",
-      passwordHash: "$2a$10$LcG5kv4uslIDQ70wdluas.ZAdXijUns2xzwiw6UK.MJjPbH1WJkRO",
+      passwordHash: "$2a$10$50qZJUFiRVc5jmUzE8OoEem3G7esTWvvPmRdQ3ZtrBPGkf644BVyS",
       role: "Account Manager",
       canViewCost: true,
       canViewMargin: false,
@@ -194,7 +245,7 @@ export const seedData = {
       number: "USR-2026-000004",
       name: "Priya PM",
       email: "pm@dcc.local",
-      passwordHash: "$2a$10$LcG5kv4uslIDQ70wdluas.ZAdXijUns2xzwiw6UK.MJjPbH1WJkRO",
+      passwordHash: "$2a$10$50qZJUFiRVc5jmUzE8OoEem3G7esTWvvPmRdQ3ZtrBPGkf644BVyS",
       role: "Project Manager",
       canViewCost: false,
       canViewMargin: false,

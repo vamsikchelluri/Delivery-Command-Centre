@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, patchJson, postJson } from "../lib/api";
+import { canEditResourceCost, canViewResourceCost, currentUser } from "../lib/permissions";
 import { DataTable, Field, Section } from "../components.jsx";
 
 export function SaveBar({ backTo, label }) {
@@ -128,13 +129,16 @@ export function ResourceFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
+  const user = currentUser();
+  const canViewCost = canViewResourceCost(user);
+  const canEditCost = canEditResourceCost(user);
   const { data: resources = [] } = useQuery({ queryKey: ["resources"], queryFn: () => apiFetch("/resources") });
   const { data: skills = [] } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: users = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: () => apiFetch("/admin/users") });
   const { data: currencies = [] } = useQuery({ queryKey: ["admin", "currencies"], queryFn: () => apiFetch("/admin/currencies") });
   const { data: locations = [] } = useQuery({ queryKey: ["admin", "locations"], queryFn: () => apiFetch("/admin/locations") });
   const record = resources.find((item) => item.id === id);
-  const [activeTab, setActiveTab] = useState("Identity and Skills");
+  const [activeTab, setActiveTab] = useState("Resource Profile");
   const [saveError, setSaveError] = useState("");
   const [form, setForm] = useState({
     firstName: "", lastName: "", contactEmail: "", contactNumber: "",
@@ -193,24 +197,27 @@ export function ResourceFormPage() {
   const locationOptions = locations.filter((location) => location.active !== false);
   const currencyOptions = currencies.filter((currency) => currency.active !== false);
   const selectedLocation = locationOptions.find((location) => location.name === form.location);
-  const reportingManagers = [...usersByRole(users, "Delivery Manager"), ...usersByRole(users, "Vice President"), ...usersByRole(users, "COO")];
-  const availablePercent = Math.max(0, 100 - Number(form.deployedPercent || 0));
+  const reportingManagers = [...usersByRole(users, "Delivery Manager"), ...usersByRole(users, "Director"), ...usersByRole(users, "Vice President"), ...usersByRole(users, "COO")];
+  const currentAllocationPercent = Number(record?.currentDeployedPercent ?? form.deployedPercent ?? 0);
+  const availablePercent = Math.max(0, Number(record?.currentAvailablePercent ?? (100 - currentAllocationPercent)));
   const visaOptions = form.locationType === "Offshore"
     ? ["NA (Offshore)"]
     : ["H1B", "OPT", "Green Card", "US Citizen", "L1", "Other"];
-  const compensationTypeOptions = allowedCompensationTypes(form.locationType, form.employmentType);
+  const compensationTypeOptions = ["", ...allowedCompensationTypes(form.locationType, form.employmentType)];
   const costFormulaHint =
     form.costCalculationMode === "Offshore Employee"
       ? "(CTC / FX / hours) * overhead"
       : form.costCalculationMode === "Onsite Employee"
         ? "(Salary / hours) * overhead"
-        : "Rate converted to USD if needed";
+        : form.costCalculationMode === "Manual estimated cost rate"
+          ? "Direct hourly cost rate"
+          : "Rate converted to USD if needed";
 
   useEffect(() => {
     const next = { ...form };
     const allowedTypes = allowedCompensationTypes(form.locationType, form.employmentType);
-    if (!allowedTypes.includes(next.compensationInputType)) {
-      next.compensationInputType = allowedTypes[0];
+    if (next.compensationInputType && !allowedTypes.includes(next.compensationInputType)) {
+      next.compensationInputType = "";
     }
 
     if (next.locationType === "Offshore") {
@@ -223,7 +230,9 @@ export function ResourceFormPage() {
       }
     }
 
-    if (next.compensationInputType === "Annual CTC") {
+    if (!next.compensationInputType) {
+      next.costCalculationMode = "Manual estimated cost rate";
+    } else if (next.compensationInputType === "Annual CTC") {
       next.compensationCurrency = next.compensationCurrency || selectedLocation?.defaultCompensationCurrency || "INR";
       next.paymentCurrency = next.paymentCurrency || selectedLocation?.defaultPaymentCurrency || next.compensationCurrency;
       next.costCalculationMode = "Offshore Employee";
@@ -245,7 +254,9 @@ export function ResourceFormPage() {
     const fx = Number(next.fxRateUsed || 1);
     const hours = 1800;
     const overhead = 1.2;
-    if (next.costCalculationMode === "Offshore Employee") {
+    if (!next.compensationInputType) {
+      next.costRate = compensation ? Number(compensation.toFixed(2)) : Number(next.costRate || 0);
+    } else if (next.costCalculationMode === "Offshore Employee") {
       next.costRate = compensation ? Number((((compensation / fx) / hours) * overhead).toFixed(2)) : 0;
     } else if (next.costCalculationMode === "Onsite Employee") {
       next.costRate = compensation ? Number(((compensation / hours) * overhead).toFixed(2)) : 0;
@@ -314,11 +325,11 @@ export function ResourceFormPage() {
   }
 
   return (
-    <PageShell eyebrow="Resource Master" title={isEdit ? `Edit Resource ${record?.number || ""}` : "Create Resource"} subtitle="Maintain identity, skills, employment, availability, and cost inputs in one consistent workspace.">
+    <PageShell eyebrow="Resource Master" title={isEdit ? `Edit Resource ${record?.number || ""}` : "Create Resource"} subtitle="Maintain the resource profile, skills, planning availability, and authorized costing inputs.">
       <form onSubmit={save}>
         {saveError ? <div className="error-banner">{saveError}</div> : null}
         <div className="tabs" role="tablist">
-          {["Identity and Skills", "Employment and Compensation"].map((tab) => (
+          {["Resource Profile", "Resource Planning and Costing"].map((tab) => (
             <button
               key={tab}
               className={activeTab === tab ? "tab active" : "tab"}
@@ -330,13 +341,28 @@ export function ResourceFormPage() {
           ))}
         </div>
 
-        {activeTab === "Identity and Skills" ? (
-          <Section title="Identity and Skills">
+        {activeTab === "Resource Profile" ? (
+          <Section title="Resource Profile">
             <div className="form-grid two-up">
               <Field label="First Name"><input value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} required /></Field>
               <Field label="Last Name"><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} required /></Field>
               <Field label="Contact Email"><input type="email" value={form.contactEmail} onChange={(event) => setForm({ ...form, contactEmail: event.target.value })} /></Field>
               <Field label="Contact Number"><input value={form.contactNumber} onChange={(event) => setForm({ ...form, contactNumber: event.target.value })} /></Field>
+              <Field label="Location">
+                <select value={form.location} onChange={(event) => updateLocation(event.target.value)}>
+                  <option value="">Select</option>
+                  {locationOptions.map((location) => <option key={location.id} value={location.name}>{location.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Location Type"><select value={form.locationType} onChange={(event) => setForm({ ...form, locationType: event.target.value })}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
+              <Field label="Engagement Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}><option>Full-Time</option><option>Part-Time</option><option>Contractor</option><option>C2C</option></select></Field>
+              <Field label="Engagement Status"><select value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value })}><option value="ACTIVE">Active</option><option value="ON_LEAVE">Unavailable</option><option value="SABBATICAL">Extended Unavailable</option><option value="INACTIVE">Inactive</option><option value="TERMINATED">Inactive - Closed</option><option value="EXITED">Inactive - Ended</option></select></Field>
+              <Field label="Reporting Manager">
+                <select value={form.reportingManager} onChange={(event) => setForm({ ...form, reportingManager: event.target.value })}>
+                  <option value="">Select</option>
+                  {reportingManagers.map((manager) => <option key={manager.id} value={manager.name}>{manager.name}</option>)}
+                </select>
+              </Field>
               <Field label="Primary SAP Module"><select value={form.primarySkill} onChange={(event) => setForm({ ...form, primarySkill: event.target.value, subModule: "", primarySubModules: [] })}>{skillOptions.map((skill) => <option key={skill.id}>{skill.name}</option>)}</select></Field>
               <Field label="Primary Sub-Modules">
                 <select multiple value={form.primarySubModules || []} onChange={(event) => setForm({ ...form, primarySubModules: selectedValues(event), subModule: selectedValues(event)[0] || "" })}>
@@ -385,83 +411,89 @@ export function ResourceFormPage() {
           </Section>
         ) : null}
 
-        {activeTab === "Employment and Compensation" ? (
-          <Section title="Employment and Compensation">
-            <Section title="Employment">
-              <div className="form-grid two-up">
-                <Field label="Location">
-                  <select value={form.location} onChange={(event) => updateLocation(event.target.value)}>
-                    <option value="">Select</option>
-                    {locationOptions.map((location) => <option key={location.id} value={location.name}>{location.name}</option>)}
-                  </select>
-                </Field>
-                <Field label="Location Type"><select value={form.locationType} onChange={(event) => setForm({ ...form, locationType: event.target.value })}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
-                <Field label="Employment Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}><option>Full-Time</option><option>Part-Time</option><option>Contractor</option><option>C2C</option></select></Field>
-                <Field label="Employment Status"><select value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value })}><option value="ACTIVE">Active</option><option value="ON_LEAVE">On Leave</option><option value="SABBATICAL">Sabbatical</option><option value="INACTIVE">Inactive</option><option value="TERMINATED">Terminated</option><option value="EXITED">Exited</option></select></Field>
-                <Field label="Start Date / Joining Date"><input type="date" value={form.joiningDate} onChange={(event) => setForm({ ...form, joiningDate: event.target.value })} /></Field>
-                <Field label="Notice Period"><input value={form.noticePeriod} onChange={(event) => setForm({ ...form, noticePeriod: event.target.value })} /></Field>
-                <Field label="Reporting Manager">
-                  <select value={form.reportingManager} onChange={(event) => setForm({ ...form, reportingManager: event.target.value })}>
-                    <option value="">Select</option>
-                    {reportingManagers.map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
-                  </select>
-                </Field>
-                <Field label="Visa / Work Authorization">
-                  <select value={form.visaWorkAuthorization} onChange={(event) => setForm({ ...form, visaWorkAuthorization: event.target.value })}>
-                    {visaOptions.map((option) => <option key={option}>{option}</option>)}
-                  </select>
-                </Field>
-                <Field label="Background Check"><select value={form.backgroundCheck} onChange={(event) => setForm({ ...form, backgroundCheck: event.target.value })}><option>Not Required</option><option>Pending</option><option>Completed</option></select></Field>
-              </div>
-            </Section>
-
-            <Section title="Availability and Roll-off">
+        {activeTab === "Resource Planning and Costing" ? (
+          <Section title="Resource Planning and Costing">
+            <Section title="Planning and Costing">
               <div className="form-grid two-up">
                 <Field label="Availability Date"><input type="date" value={form.availabilityDate} onChange={(event) => setForm({ ...form, availabilityDate: event.target.value })} /></Field>
-                <Field label="Delivery Roll-off Date"><input type="date" value={form.deliveryRollOffDate} onChange={(event) => setForm({ ...form, deliveryRollOffDate: event.target.value })} /></Field>
-                <Field label="Not Available From"><input type="date" value={form.notAvailableFrom} onChange={(event) => setForm({ ...form, notAvailableFrom: event.target.value })} /></Field>
-                <Field label="Not Available To"><input type="date" value={form.notAvailableTo} onChange={(event) => setForm({ ...form, notAvailableTo: event.target.value })} /></Field>
-                <Field label="Not Available Reason"><input value={form.notAvailableReason} onChange={(event) => setForm({ ...form, notAvailableReason: event.target.value })} /></Field>
+                <Field label="Current Engagement Roll-Off Date"><input type="date" value={form.deliveryRollOffDate} onChange={(event) => setForm({ ...form, deliveryRollOffDate: event.target.value })} /></Field>
+                <Field label="Current Allocation %"><input value={`${currentAllocationPercent}%`} readOnly /></Field>
+                <Field label="Remaining Capacity %"><input value={`${availablePercent}%`} readOnly /></Field>
+                {canEditCost ? (
+                  <Field label="Costing Type">
+                    <select value={form.compensationInputType} onChange={(event) => setForm({ ...form, compensationInputType: event.target.value })}>
+                      {compensationTypeOptions.map((option) => <option key={option || "direct"} value={option}>{option || "Direct estimated cost rate"}</option>)}
+                    </select>
+                  </Field>
+                ) : null}
+                {canEditCost ? <Field label="Cost Basis Amount"><input type="number" step="any" value={form.compensationValue} onChange={(event) => setForm({ ...form, compensationValue: event.target.value })} /></Field> : null}
+                {canEditCost ? (
+                  <Field label="Cost Currency">
+                    <select value={form.compensationCurrency} onChange={(event) => setForm({ ...form, compensationCurrency: event.target.value })}>
+                      <option value="">Select</option>
+                      {currencyOptions.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}
+                    </select>
+                  </Field>
+                ) : null}
+                {canEditCost ? (
+                  <Field label="Estimated Cost Rate">
+                    <input type="number" step="any" value={form.costRate} readOnly={Boolean(form.compensationInputType)} onChange={(event) => setForm({ ...form, costRate: event.target.value, compensationValue: event.target.value })} />
+                  </Field>
+                ) : canViewCost ? (
+                  <Field label="Estimated Cost Rate"><input value={`$${form.costRate}/hr`} readOnly /></Field>
+                ) : null}
+                {canEditCost ? (
+                  <Field label="Payment Currency">
+                    <select value={form.paymentCurrency} onChange={(event) => setForm({ ...form, paymentCurrency: event.target.value })}>
+                      <option value="">Select</option>
+                      {currencyOptions.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}
+                    </select>
+                  </Field>
+                ) : null}
+                {canEditCost ? (
+                  <Field label="Payment Terms">
+                    <select value={form.paymentTerms} onChange={(event) => setForm({ ...form, paymentTerms: event.target.value })}><option>Monthly Payroll</option><option>Monthly Invoice</option><option>Bi-Weekly</option><option>Net 15</option><option>Net 30</option></select>
+                  </Field>
+                ) : null}
+                <div className="availability-exception-block">
+                  <div>
+                    <h3>Availability Exception</h3>
+                    <p className="muted small">Optional planning hold for a date range.</p>
+                  </div>
+                  <div className="form-grid two-up">
+                    <Field label="From"><input type="date" value={form.notAvailableFrom} onChange={(event) => setForm({ ...form, notAvailableFrom: event.target.value })} /></Field>
+                    <Field label="To"><input type="date" value={form.notAvailableTo} onChange={(event) => setForm({ ...form, notAvailableTo: event.target.value })} /></Field>
+                    <Field label="Type">
+                      <select value={form.notAvailableReason} onChange={(event) => setForm({ ...form, notAvailableReason: event.target.value })}>
+                        <option value="">None</option>
+                        <option>Planned Leave</option>
+                        <option>Internal Hold</option>
+                        <option>Client Hold</option>
+                        <option>Training</option>
+                        <option>Administrative</option>
+                        <option>Other</option>
+                      </select>
+                    </Field>
+                  </div>
+                </div>
               </div>
             </Section>
 
-            <Section title="Compensation and Payment">
-              <div className="form-grid two-up">
-                <Field label="Compensation Input Type">
-                  <select value={form.compensationInputType} onChange={(event) => setForm({ ...form, compensationInputType: event.target.value })}>
-                    {compensationTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </select>
-                </Field>
-                <Field label="Compensation Value"><input type="number" value={form.compensationValue} onChange={(event) => setForm({ ...form, compensationValue: event.target.value })} /></Field>
-                <Field label="Compensation Currency">
-                  <select value={form.compensationCurrency} onChange={(event) => setForm({ ...form, compensationCurrency: event.target.value })}>
-                    <option value="">Select</option>
-                    {currencyOptions.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}
-                  </select>
-                </Field>
-                <Field label="Payment Terms"><select value={form.paymentTerms} onChange={(event) => setForm({ ...form, paymentTerms: event.target.value })}><option>Monthly Payroll</option><option>Monthly Invoice</option><option>Bi-Weekly</option><option>Net 15</option><option>Net 30</option></select></Field>
-                <Field label="Payment Currency">
-                  <select value={form.paymentCurrency} onChange={(event) => setForm({ ...form, paymentCurrency: event.target.value })}>
-                    <option value="">Select</option>
-                    {currencyOptions.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}
-                  </select>
-                </Field>
-              </div>
-            </Section>
-
-            <Section title="Derived System Outputs">
-              <div className="info-grid">
-                <div><span>Delivery Status</span><strong>{form.deliveryStatus.replaceAll("_", " ")}</strong></div>
-                <div><span>Deployed %</span><strong>{form.deployedPercent}%</strong></div>
-                <div><span>Available %</span><strong>{availablePercent}%</strong></div>
-                <div><span>Cost Calculation Mode</span><strong>{form.costCalculationMode}</strong></div>
-                <div><span>Derived Cost Rate</span><strong>${form.costRate}/hr</strong></div>
-                <div><span>FX Rate Used</span><strong>{form.fxRateUsed} {form.compensationCurrency}/USD</strong></div>
-                <div><span>Standard Hours Per Year</span><strong>1800</strong></div>
-                <div><span>Overhead Multiplier</span><strong>1.2</strong></div>
-                <div><span>Cost Formula Hint</span><strong>{costFormulaHint}</strong></div>
-              </div>
-            </Section>
+            {canViewCost ? (
+              <Section title="Costing Calculation Reference">
+                <div className="info-grid">
+                  <div><span>Delivery Status</span><strong>{form.deliveryStatus.replaceAll("_", " ")}</strong></div>
+                  <div><span>Current Allocation %</span><strong>{currentAllocationPercent}%</strong></div>
+                  <div><span>Remaining Capacity %</span><strong>{availablePercent}%</strong></div>
+                  <div><span>Cost Calculation Mode</span><strong>{form.costCalculationMode}</strong></div>
+                  <div><span>Estimated Cost Rate</span><strong>${form.costRate}/hr</strong></div>
+                  <div><span>FX Rate Used</span><strong>{form.fxRateUsed} {form.compensationCurrency}/USD</strong></div>
+                  <div><span>Standard Hours Per Year</span><strong>1800</strong></div>
+                  <div><span>Overhead Multiplier</span><strong>1.2</strong></div>
+                  <div><span>Cost Formula Hint</span><strong>{costFormulaHint}</strong></div>
+                </div>
+              </Section>
+            ) : null}
           </Section>
         ) : null}
         <SaveBar backTo="/resources" label="Save Resource" />
@@ -576,7 +608,7 @@ export function OpportunityFormPage() {
               <Field label="Source of Opportunity"><select value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })}><option>Existing Client</option><option>Referral</option><option>RFP</option><option>Cold Outreach</option><option>Partner</option><option>Other</option></select></Field>
               <Field label="Deal Type"><input value={form.dealType} onChange={(event) => setForm({ ...form, dealType: event.target.value })} /></Field>
               <Field label="Stage"><select value={form.stage} onChange={(event) => updateStage(event.target.value)}><option value="QUALIFYING">Qualifying</option><option value="PROPOSED">Proposed</option><option value="NEGOTIATING">Negotiating</option><option value="SOW">SOW</option><option value="WON">Won</option><option value="LOST">Lost</option></select></Field>
-              <Field label="Probability"><input type="number" value={form.probability} onChange={(event) => setForm({ ...form, probability: event.target.value })} /></Field>
+              <Field label="Probability"><input type="number" step="any" value={form.probability} onChange={(event) => setForm({ ...form, probability: event.target.value })} /></Field>
               <Field label="Account Manager">
                 <select value={form.accountManagerName} onChange={(event) => setForm({ ...form, accountManagerName: event.target.value })} required>
                   <option value="">Select</option>
@@ -596,8 +628,8 @@ export function OpportunityFormPage() {
         {activeTab === "Timeline & Financials" ? (
           <Section title="Timeline & Financials">
             <div className="form-grid two-up">
-              <Field label="Estimated Revenue"><input type="number" value={form.estimatedRevenue} onChange={(event) => setForm({ ...form, estimatedRevenue: event.target.value })} /></Field>
-              <Field label="Target Margin %"><input type="number" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
+              <Field label="Estimated Revenue"><input type="number" step="any" value={form.estimatedRevenue} onChange={(event) => setForm({ ...form, estimatedRevenue: event.target.value })} /></Field>
+              <Field label="Target Margin %"><input type="number" step="any" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
               <Field label="Currency"><input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} /></Field>
               <Field label="Expected Close"><input type="date" value={form.expectedCloseDate} onChange={(event) => setForm({ ...form, expectedCloseDate: event.target.value })} /></Field>
               <Field label="Expected Start"><input type="date" value={form.expectedStartDate} onChange={(event) => setForm({ ...form, expectedStartDate: event.target.value })} /></Field>
@@ -833,13 +865,13 @@ export function SowFormPage() {
               <Field label="Currency"><input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} /></Field>
               <Field label="Start Date"><input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></Field>
               <Field label="End Date"><input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></Field>
-              <Field label="Contract Value"><input type="number" value={form.contractValue} onChange={(event) => setForm({ ...form, contractValue: event.target.value })} /></Field>
-              <Field label="Visible Revenue"><input type="number" value={form.visibleRevenue} onChange={(event) => setForm({ ...form, visibleRevenue: event.target.value })} /></Field>
-              <Field label="Visible Cost"><input type="number" value={form.visibleCost} onChange={(event) => setForm({ ...form, visibleCost: event.target.value })} /></Field>
-              <Field label="Target Margin %"><input type="number" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
+              <Field label="Contract Value"><input type="number" step="any" value={form.contractValue} onChange={(event) => setForm({ ...form, contractValue: event.target.value })} /></Field>
+              <Field label="Visible Revenue"><input type="number" step="any" value={form.visibleRevenue} onChange={(event) => setForm({ ...form, visibleRevenue: event.target.value })} /></Field>
+              <Field label="Visible Cost"><input type="number" step="any" value={form.visibleCost} onChange={(event) => setForm({ ...form, visibleCost: event.target.value })} /></Field>
+              <Field label="Target Margin %"><input type="number" step="any" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
               <Field label="T&E Allowed"><select value={String(form.travelExpensesAllowed)} onChange={(event) => setForm({ ...form, travelExpensesAllowed: event.target.value === "true" })}><option value="false">No</option><option value="true">Yes</option></select></Field>
               <Field label="T&E Billing Type"><select value={form.travelExpensesBillingType} onChange={(event) => setForm({ ...form, travelExpensesBillingType: event.target.value })}><option>Included</option><option>Pass-through</option><option>Capped</option><option>Not Billable</option></select></Field>
-              <Field label="T&E Cap Amount"><input type="number" value={form.travelExpensesCapAmount} onChange={(event) => setForm({ ...form, travelExpensesCapAmount: event.target.value })} /></Field>
+              <Field label="T&E Cap Amount"><input type="number" step="any" value={form.travelExpensesCapAmount} onChange={(event) => setForm({ ...form, travelExpensesCapAmount: event.target.value })} /></Field>
               <Field label="T&E Approval Required"><select value={String(form.travelExpensesApprovalRequired)} onChange={(event) => setForm({ ...form, travelExpensesApprovalRequired: event.target.value === "true" })}><option value="false">No</option><option value="true">Yes</option></select></Field>
               <Field label="T&E Notes"><textarea rows="2" value={form.travelExpensesNotes} onChange={(event) => setForm({ ...form, travelExpensesNotes: event.target.value })} /></Field>
             </div>

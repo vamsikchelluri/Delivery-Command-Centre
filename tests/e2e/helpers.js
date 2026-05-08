@@ -9,7 +9,7 @@ export async function login(page) {
   await page.goto("/");
   if (await page.getByRole("button", { name: "Sign in" }).isVisible().catch(() => false)) {
     await page.getByLabel("Email").fill("coo@dcc.local");
-    await page.getByLabel("Password").fill("admin123");
+    await page.getByLabel("Password").fill("DccDemo!2026");
     await page.getByRole("button", { name: "Sign in" }).click();
   }
   await expect(page.getByRole("link", { name: "Clients" })).toBeVisible();
@@ -43,7 +43,7 @@ export async function createClient(page, clientName) {
   await controlByLabel(page, "Client Name").fill(clientName);
   await selectByLabel(page, "Client Status", "Active");
   await controlByLabel(page, "Industry").fill("Technology");
-  await controlByLabel(page, "Region").fill("India");
+  await selectByLabel(page, "Region", "India");
   await controlByLabel(page, "Contact Person").fill("QA Contact");
   await controlByLabel(page, "Contact Email").fill("qa.client@example.com");
   await controlByLabel(page, "Contact Phone").fill("9999999999");

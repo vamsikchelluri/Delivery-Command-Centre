@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -26,6 +26,7 @@ enum OpportunityStage {
   QUALIFYING
   PROPOSED
   NEGOTIATING
+  SOW
   WON
   LOST
 }
@@ -57,53 +58,116 @@ enum MeasurementUnit {
 }
 
 model Account {
-  id         String        @id @default(cuid())
-  number     String        @unique
-  name       String
-  industry   String?
-  region     String?
-  active     Boolean       @default(true)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  number       String        @unique
+  name         String
+  status       String?
+  industry     String?
+  region       String?
+  contactPerson String?
+  contactEmail  String?
+  contactPhone  String?
+  notes        String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   opportunities Opportunity[]
-  sows       Sow[]
+  sows         Sow[]
 }
 
 model User {
-  id           String   @id @default(cuid())
-  number       String   @unique
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         String
-  canViewCost  Boolean  @default(false)
-  canViewMargin Boolean @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  number        String   @unique
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          String
+  canViewCost   Boolean  @default(false)
+  canViewMargin Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AppRole {
+  id            String           @id @default(cuid())
+  name          String           @unique
+  canViewCost   Boolean          @default(false)
+  canViewMargin Boolean          @default(false)
+  active        Boolean          @default(true)
+  permissions   RolePermission[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model PermissionFeature {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  name        String
+  category    String?
+  actions     String[]
+  permissions RolePermission[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}
+
+model RolePermission {
+  id         String            @id @default(cuid())
+  roleId     String
+  roleName   String
+  featureKey String
+  action     String
+  allowed    Boolean           @default(false)
+  role       AppRole?          @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  feature    PermissionFeature? @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([roleName, featureKey, action])
+  @@index([roleId])
+  @@index([featureKey])
 }
 
 model Resource {
-  id                 String           @id @default(cuid())
-  number             String           @unique
-  firstName          String
-  lastName           String
-  email              String?
-  primarySkill       String
-  subModule          String?
-  location           String?
-  locationType       String?
-  employmentType     String?
-  employmentStatus   EmploymentStatus
-  deliveryStatus     DeliveryStatus
-  deployedPercent    Int              @default(0)
-  availableDate      DateTime?
-  deliveryRollOffDate DateTime?
-  costRate           Float            @default(0)
-  ownerName          String?
-  currentSowName     String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  deployments        Deployment[]
+  id                      String           @id @default(cuid())
+  number                  String           @unique
+  firstName               String
+  lastName                String
+  email                   String?
+  contactEmail            String?
+  contactNumber           String?
+  primarySkill            String
+  subModule               String?
+  primarySubModules       String[]         @default([])
+  secondarySkills         Json?
+  location                String?
+  locationType            String?
+  employmentType          String?
+  employmentStatus        EmploymentStatus @default(ACTIVE)
+  deliveryStatus          DeliveryStatus   @default(AVAILABLE)
+  deployedPercent         Int              @default(0)
+  joiningDate             DateTime?
+  noticePeriod            String?
+  availabilityDate        DateTime?
+  deliveryRollOffDate     DateTime?
+  notAvailableFrom        DateTime?
+  notAvailableTo          DateTime?
+  notAvailableReason      String?
+  visaWorkAuthorization   String?
+  backgroundCheck         String?
+  compensationInputType   String?
+  compensationValue       Float?
+  compensationCurrency    String?
+  paymentTerms            String?
+  paymentCurrency         String?
+  costRate                Float            @default(0)
+  reportingManager        String?
+  ownerName               String?
+  currentSowName          String?
+  costCalculationMode     String?
+  fxRateUsed              Float?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  deployments             Deployment[]
 }
 
 model Opportunity {
@@ -116,14 +180,17 @@ model Opportunity {
   estimatedRevenue    Float
   roleEstimatedRevenue Float            @default(0)
   weightedValue       Float             @default(0)
-  currency            String
+  currency            String            @default("USD")
   expectedCloseDate   DateTime
   expectedStartDate   DateTime
   expectedEndDate     DateTime?
   accountManagerName  String
   deliveryManagerName String
   dealType            String?
+  source              String?
+  targetMargin        Float?
   notes               String?
+  notesHistory        Json?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   account             Account           @relation(fields: [accountId], references: [id])
@@ -144,47 +211,58 @@ model OpportunityRole {
   startDate             DateTime?
   duration              Int?
   endDate               DateTime?
+  roleLocation          String?
   estimatedHours        Float?
   billRate              Float?
+  targetMargin          Float?
   costGuidance          Float?
+  baseCostGuidance      Float?
+  loadedCostGuidance    Float?
   allocationPercent     Int?
   resourceIdentificationStatus String?
   candidateResourceName String?
   notes                 String?
   createdAt             DateTime    @default(now())
   updatedAt             DateTime    @updatedAt
-  opportunity           Opportunity @relation(fields: [opportunityId], references: [id])
+  opportunity           Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   sowRoles              SowRole[]
 }
 
 model Sow {
-  id                  String       @id @default(cuid())
-  number              String       @unique
+  id                  String          @id @default(cuid())
+  number              String          @unique
   accountId           String
   sourceOpportunityId String?
   name                String
   billingModel        BillingModel
   status              SowStatus
-  currency            String
+  currency            String          @default("USD")
   startDate           DateTime
   endDate             DateTime
   contractValue       Float
-  visibleRevenue      Float        @default(0)
-  visibleCost         Float        @default(0)
-  grossMargin         Float        @default(0)
-  grossMarginPercent  Float        @default(0)
+  visibleRevenue      Float           @default(0)
+  visibleCost         Float           @default(0)
+  grossMargin         Float           @default(0)
+  grossMarginPercent  Float           @default(0)
+  targetMargin        Float?
   projectHealth       String?
   projectManagerName  String
   deliveryManagerName String
   accountManagerName  String
   parentSowReference  String?
-  createdFrom         String       @default("DIRECT")
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  account             Account      @relation(fields: [accountId], references: [id])
-  sourceOpportunity   Opportunity? @relation(fields: [sourceOpportunityId], references: [id])
+  createdFrom         String          @default("DIRECT")
+  travelExpensesAllowed Boolean       @default(false)
+  travelExpensesBillingType String?
+  travelExpensesCapAmount Float?
+  travelExpensesApprovalRequired Boolean @default(false)
+  travelExpensesNotes String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  account             Account         @relation(fields: [accountId], references: [id])
+  sourceOpportunity   Opportunity?    @relation(fields: [sourceOpportunityId], references: [id])
   roles               SowRole[]
   milestones          Milestone[]
+  attachments         SowAttachment[]
 }
 
 model SowRole {
@@ -197,9 +275,14 @@ model SowRole {
   subModule             String?
   quantity              Int             @default(1)
   engagementType        String?
+  experienceLevel       String?
   billingType           String?
   billRate              Float?
   costRate              Float?
+  targetMargin          Float?
+  costGuidance          Float?
+  baseCostGuidance      Float?
+  loadedCostGuidance    Float?
   startDate             DateTime?
   duration              Int?
   endDate               DateTime?
@@ -212,9 +295,10 @@ model SowRole {
   measurementUnit       MeasurementUnit @default(HOURS)
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
-  sow                   Sow             @relation(fields: [sowId], references: [id])
+  sow                   Sow             @relation(fields: [sowId], references: [id], onDelete: Cascade)
   sourceOpportunityRole OpportunityRole? @relation(fields: [sourceOpportunityRoleId], references: [id])
   deployments           Deployment[]
+  deploymentPlans       DeploymentPlan[]
 }
 
 model Deployment {
@@ -226,15 +310,35 @@ model Deployment {
   endDate         DateTime
   allocationPercent Int
   status          DeploymentStatus
-  lockedCostRate  Float
+  lockedCostRate  Float            @default(0)
   lockedBillRate  Float?
   billable        Boolean          @default(true)
   sourceOfAssignment String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  sowRole         SowRole          @relation(fields: [sowRoleId], references: [id])
+  sowRole         SowRole          @relation(fields: [sowRoleId], references: [id], onDelete: Cascade)
   resource        Resource         @relation(fields: [resourceId], references: [id])
   actuals         Actual[]
+  deploymentPlans DeploymentPlan[]
+}
+
+model DeploymentPlan {
+  id              String          @id @default(cuid())
+  number          String?         @unique
+  deploymentId    String?
+  sowRoleId       String
+  month           DateTime
+  plannedQuantity Float           @default(0)
+  plannedUnit     MeasurementUnit @default(HOURS)
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deployment      Deployment?     @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  sowRole         SowRole         @relation(fields: [sowRoleId], references: [id], onDelete: Cascade)
+
+  @@unique([deploymentId, sowRoleId, month])
+  @@index([sowRoleId])
+  @@index([month])
 }
 
 model Actual {
@@ -250,7 +354,7 @@ model Actual {
   enteredDate     DateTime        @default(now())
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  deployment      Deployment      @relation(fields: [deploymentId], references: [id])
+  deployment      Deployment      @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
 
   @@unique([deploymentId, month])
 }
@@ -271,7 +375,22 @@ model Milestone {
   remarks       String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  sow           Sow      @relation(fields: [sowId], references: [id])
+  sow           Sow      @relation(fields: [sowId], references: [id], onDelete: Cascade)
+}
+
+model SowAttachment {
+  id          String   @id @default(cuid())
+  number      String?  @unique
+  sowId       String
+  documentType String
+  fileName    String?
+  referenceUrl String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  sow         Sow      @relation(fields: [sowId], references: [id], onDelete: Cascade)
+
+  @@index([sowId])
 }
 
 model AuditLog {
@@ -287,4 +406,67 @@ model AuditLog {
   sourceScreen String?
   importReference String?
   createdAt   DateTime @default(now())
+}
+
+model Skill {
+  id          String   @id @default(cuid())
+  number      String?  @unique
+  code        String?
+  name        String
+  description String?
+  sortOrder   Int?
+  subModules  Json?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Currency {
+  id       String  @id @default(cuid())
+  code     String  @unique
+  name     String
+  fxToUsd  Float
+  active   Boolean @default(true)
+}
+
+model Region {
+  id        String  @id @default(cuid())
+  code      String  @unique
+  name      String
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+}
+
+model Location {
+  id                          String  @id @default(cuid())
+  name                        String  @unique
+  locationType                String
+  defaultCompensationCurrency String?
+  defaultPaymentCurrency      String?
+  active                      Boolean @default(true)
+}
+
+model ExperienceLevel {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  fromYears Int     @default(0)
+  toYears   Int     @default(0)
+  active    Boolean @default(true)
+}
+
+model SystemConfig {
+  id          String @id @default(cuid())
+  key         String @unique
+  value       String
+  description String?
+}
+
+model NumberRange {
+  id             String  @id @default(cuid())
+  objectType     String  @unique
+  prefix         String
+  sequenceLength Int
+  nextNumber     Int
+  includeYear    Boolean @default(true)
+  active         Boolean @default(true)
 }

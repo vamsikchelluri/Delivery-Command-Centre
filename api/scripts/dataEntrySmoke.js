@@ -23,7 +23,7 @@ async function post(path, body) {
 }
 
 async function main() {
-  const login = await post("/auth/login", { email: "coo@dcc.local", password: "admin123" });
+  const login = await post("/auth/login", { email: "coo@dcc.local", password: "DccDemo!2026" });
   globalThis.token = login.token;
 
   const account = await post("/accounts", {

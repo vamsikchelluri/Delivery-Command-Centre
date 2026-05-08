@@ -5,9 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "node src/server.js",
+    "start": "node src/server.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "node prisma/seed.js"
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "node scripts/importJsonToPostgres.js --reset --master-data-only",
+    "db:seed-master": "node scripts/importJsonToPostgres.js --reset --master-data-only",
+    "db:import-json": "node scripts/importJsonToPostgres.js --master-data-only",
+    "db:import-full-json:dev": "node scripts/importJsonToPostgres.js"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",

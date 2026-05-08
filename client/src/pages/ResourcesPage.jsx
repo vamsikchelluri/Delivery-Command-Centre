@@ -2,13 +2,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { canViewResourceCost, currentUser } from "../lib/permissions";
 import { DataTable, PageHeaderCard, Section, StatCard } from "../components.jsx";
 
 export function ResourcesPage() {
   const navigate = useNavigate();
+  const user = currentUser();
+  const canViewCost = canViewResourceCost(user);
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("All Locations");
-  const [typeFilter, setTypeFilter] = useState("All Types");
+  const [typeFilter, setTypeFilter] = useState("All Engagement Types");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const { data = [], isLoading } = useQuery({
     queryKey: ["resources"],
@@ -16,13 +19,13 @@ export function ResourcesPage() {
   });
 
   const locationOptions = ["All Locations", ...new Set(data.map((item) => item.location || "Unassigned"))];
-  const typeOptions = ["All Types", ...new Set(data.map((item) => item.employmentType || "Unknown"))];
+  const typeOptions = ["All Engagement Types", ...new Set(data.map((item) => item.employmentType || "Unknown"))];
   const statusOptions = ["All Status", ...new Set(data.map((item) => item.currentDeliveryStatusLabel || item.deliveryStatus || "Unknown"))];
   const filtered = data.filter((row) => {
     const text = `${row.firstName} ${row.lastName} ${row.primarySkill} ${row.subModule || ""} ${(row.primarySubModules || []).join(" ")}`.toLowerCase();
     const matchesSearch = !search || text.includes(search.toLowerCase());
     const matchesLocation = locationFilter === "All Locations" || (row.location || "Unassigned") === locationFilter;
-    const matchesType = typeFilter === "All Types" || (row.employmentType || "Unknown") === typeFilter;
+    const matchesType = typeFilter === "All Engagement Types" || (row.employmentType || "Unknown") === typeFilter;
     const matchesStatus = statusFilter === "All Status" || (row.currentDeliveryStatusLabel || row.deliveryStatus || "Unknown") === statusFilter;
     return matchesSearch && matchesLocation && matchesType && matchesStatus;
   });
@@ -39,7 +42,7 @@ export function ResourcesPage() {
       <PageHeaderCard
         eyebrow="Resource Master"
         title="Resource Management"
-        subtitle="Full roster, cost rates, skills, and deployment history."
+        subtitle="Resource profiles, skills, capacity, and deployment history."
         actions={
           <div className="register-header-actions">
             <div className="register-filter-bar">
@@ -80,8 +83,8 @@ export function ResourcesPage() {
               { key: "primarySkill", label: "Primary Skill" },
               { key: "primarySubModules", label: "Sub-Modules", render: (row) => row.primarySubModules?.length ? row.primarySubModules.join(", ") : row.subModule || "-" },
               { key: "currentDeliveryStatusLabel", label: "Current Status" },
-              { key: "currentDeployedPercent", label: "Current Deployed %" },
-              { key: "costRate", label: "Cost Rate", render: (row) => `$${row.costRate}` },
+              { key: "currentDeployedPercent", label: "Current Allocation %" },
+              ...(canViewCost ? [{ key: "costRate", label: "Estimated Cost Rate", render: (row) => `$${row.costRate}` }] : []),
               { key: "currentActiveSowName", label: "Current SOW" },
               {
                 key: "actions",

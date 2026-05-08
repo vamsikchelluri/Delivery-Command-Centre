@@ -342,6 +342,517 @@ textarea {
   margin: 0;
 }
 
+.role-permissions-admin {
+  display: grid;
+  gap: 1rem;
+}
+
+.role-permissions-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.permission-matrix {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.permission-matrix table {
+  min-width: 820px;
+}
+
+.permission-action-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.permission-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #47586b;
+}
+
+.success-banner {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #9bd8b7;
+  border-radius: var(--radius);
+  background: #eefbf4;
+  color: #11643a;
+  font-weight: 700;
+}
+
+.financial-cockpit-page {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.financial-cockpit-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.financial-cockpit-hero.refined {
+  border-left-color: var(--success);
+  background:
+    linear-gradient(100deg, rgba(7, 95, 115, 0.08), transparent 52%),
+    #ffffff;
+}
+
+.financial-cockpit-title {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.financial-cockpit-title h2 {
+  margin: 0;
+  font-size: 1.38rem;
+  line-height: 1.32;
+}
+
+.financial-cockpit-title h2 span {
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.financial-filter-panel {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.78rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.financial-filter-panel > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.financial-filter-panel strong {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.financial-filter-panel small {
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.financial-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.financial-filter-grid.refined {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+  align-items: end;
+}
+
+.financial-filter-grid label {
+  display: grid;
+  gap: 0.18rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.financial-filter-grid input,
+.financial-filter-grid select {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.financial-gauge-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 0.8rem;
+}
+
+.gauge-card {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.48rem;
+  min-height: 222px;
+  padding: 0.9rem 0.85rem;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  text-align: center;
+}
+
+.gauge-card:hover,
+.gauge-card.active {
+  background: #ffffff;
+  border-color: var(--primary);
+  border-top-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.gauge-card.gauge-green {
+  border-top-color: var(--success);
+}
+
+.gauge-card.gauge-amber {
+  border-top-color: var(--warning);
+}
+
+.gauge-card.gauge-red {
+  border-top-color: var(--danger);
+}
+
+.gauge-label {
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.gauge-face {
+  position: relative;
+  width: 148px;
+  height: 86px;
+  margin-top: 0.1rem;
+  overflow: hidden;
+}
+
+.gauge-zone {
+  position: absolute;
+  inset: 0;
+  border: 16px solid transparent;
+  border-bottom: 0;
+  border-radius: 148px 148px 0 0;
+}
+
+.gauge-zone-red {
+  border-color: var(--danger);
+  clip-path: polygon(0 0, 42% 0, 42% 100%, 0 100%);
+}
+
+.gauge-zone-amber {
+  border-color: var(--warning);
+  clip-path: polygon(30% 0, 72% 0, 72% 100%, 30% 100%);
+}
+
+.gauge-zone-green {
+  border-color: var(--success);
+  clip-path: polygon(60% 0, 100% 0, 100% 100%, 60% 100%);
+}
+
+.gauge-needle {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 4px;
+  height: 58px;
+  margin-left: -2px;
+  border-radius: 999px;
+  background: #14212d;
+  transform-origin: 50% 100%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.75);
+}
+
+.gauge-face b {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  min-width: 78px;
+  padding: 0.35rem 0.45rem;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 1.2rem;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+.gauge-card strong {
+  color: var(--text);
+  font-size: 0.94rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.gauge-card small {
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.financial-signal-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 0.8rem;
+}
+
+.signal-card {
+  position: relative;
+  display: grid;
+  gap: 0.18rem;
+  min-height: 94px;
+  padding: 0.82rem 0.9rem 0.82rem 1rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--text);
+  text-align: left;
+  box-shadow: var(--shadow-sm);
+}
+
+.signal-card:hover,
+.signal-card.active {
+  background: #ffffff;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.signal-card span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.signal-card strong {
+  font-size: 1.36rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.signal-card small {
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.signal-card i {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 4px;
+  background: var(--border-strong);
+}
+
+.signal-green i {
+  background: var(--success);
+}
+
+.signal-amber i {
+  background: var(--warning);
+}
+
+.signal-red i {
+  background: var(--danger);
+}
+
+.financial-insight-grid {
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr) minmax(260px, 1fr);
+  align-items: stretch;
+}
+
+.client-concentration,
+.portfolio-mix,
+.exception-preview {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.client-concentration button,
+.portfolio-mix button,
+.exception-preview button {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  padding: 0.62rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--text);
+  box-shadow: none;
+  text-align: left;
+}
+
+.client-concentration button {
+  grid-template-columns: minmax(100px, 0.9fr) minmax(110px, 1.2fr) minmax(72px, auto);
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.client-concentration button:hover,
+.client-concentration button.active,
+.portfolio-mix button:hover,
+.portfolio-mix button.active,
+.exception-preview button:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.client-concentration span,
+.portfolio-mix span {
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-concentration div {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eef3;
+}
+
+.client-concentration i,
+.portfolio-mix i {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.client-concentration strong,
+.portfolio-mix strong {
+  justify-self: end;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolio-mix button {
+  position: relative;
+  grid-template-columns: minmax(90px, 1fr) 70px 64px;
+  gap: 0.5rem;
+  align-items: center;
+  overflow: hidden;
+  padding-bottom: 0.78rem;
+}
+
+.portfolio-mix em {
+  justify-self: end;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 750;
+}
+
+.portfolio-mix i {
+  position: absolute;
+  left: 0.7rem;
+  right: auto;
+  bottom: 0.35rem;
+  height: 4px;
+}
+
+.exception-preview button {
+  grid-template-columns: 12px minmax(110px, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.exception-preview small {
+  grid-column: 2;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.severity-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.severity-red {
+  background: var(--danger);
+}
+
+.severity-amber {
+  background: var(--warning);
+}
+
+.financial-trend-bars {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.financial-trend-row {
+  display: grid;
+  grid-template-columns: 88px minmax(180px, 1fr) 92px;
+  gap: 0.65rem;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.financial-bar-track {
+  display: grid;
+  gap: 0.18rem;
+  min-height: 22px;
+  padding: 0.22rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #f7fafc;
+}
+
+.financial-bar-track i {
+  display: block;
+  min-width: 3px;
+  height: 7px;
+  border-radius: 99px;
+}
+
+.client-revenue-bars {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.client-revenue-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(160px, 1.4fr) 92px;
+  gap: 0.65rem;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.client-revenue-row div {
+  height: 14px;
+  border-radius: 999px;
+  background: #e8eef3;
+  overflow: hidden;
+}
+
+.client-revenue-row i {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #0f6b7c, #2b7cff);
+}
+
 .sap-module-list {
   display: grid;
   overflow: hidden;
@@ -1362,6 +1873,21 @@ textarea {
 
 .form-grid.two-up {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.availability-exception-block {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.availability-exception-block h3 {
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .form-actions {

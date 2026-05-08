@@ -73,7 +73,7 @@
 - Local app runtime is `http://localhost:4000`.
 - `api/src/server.js` serves both protected `/api/*` routes and the built React client from `client/dist`.
 - Active MVP data persistence is file-backed JSON at `api/src/data/db.json`.
-- Seed/demo login is `coo@dcc.local` / `admin123`.
+- Seed/demo login is `coo@dcc.local` / `DccDemo!2026`.
 - Main React routing lives in `client/src/App.jsx`.
 - Shared frontend primitives live in `client/src/components.jsx`.
 - Generic child CRUD for opportunity roles, SOW roles, deployments, actuals, and milestones lives in `api/src/routes/children.js`.
@@ -127,6 +127,43 @@
 - Active Resource Deployment only shows active deployments under active SOWs; deployment number, SOW status, resource ID, and resource status are intentionally omitted to keep the report focused on resource-to-SOW assignment and allocation.
 - Resource Planning status labels are defined as `Confirmed Open`, `Open`, `Match Available`, `Partial Match`, and `At Risk`; `Covered` should not be used because the report does not perform assignment.
 - Dashboard financial donut must show the calculation basis explicitly: `Actual`, `Actual - No Entries`, or `Projected Revenue Only`. Future months show projected revenue from plans but do not project cost or margin yet.
+
+## Current Build Notes - 2026-05-08
+- Railway Postgres is connected through `DATABASE_URL`, but the live MVP scope is intentionally limited to platform/admin master data and configurable authorizations.
+- Postgres-backed runtime collections are SAP modules/skills, currencies, regions, locations, experience levels, system configs, number ranges, application roles, permission features, role permissions, and Admin audit entries for those master-data changes.
+- Users are identity/security data, not master data. Runtime login currently uses the local JSON bootstrap user `coo@dcc.local`; Railway Postgres user rows were cleared.
+- Business data is intentionally not in Railway Postgres for the live MVP start. Clients, resources, opportunities, SOWs, roles, deployments, deployment plans, actuals, milestones, financials, and dashboard business facts remain JSON-backed and have been cleared from `api/src/data/db.json` for a fresh start.
+- Old JSON demo business records were archived under `api/src/data/archive/` before clearing. A full pre-clear JSON backup was also written there.
+- Phase 2 is closed for the approved scope: master/admin data and authorizations use Postgres repositories/routes, while business data migration is explicitly out of scope.
+- Phase 3 is closed for the approved scope: production seed/import defaults are master-data-only; old demo business data is archived and is not reseeded in production.
+- `npm run db:seed --workspace api`, `npm run db:seed-master --workspace api`, and `npm run db:import-json --workspace api` now import only master data and authorizations. The full JSON importer remains available only as `npm run db:import-full-json:dev --workspace api` for intentional development recovery.
+- Runtime business routes still use the fresh JSON shell until a future business-data repository design is approved. Do not reintroduce demo clients/resources/SOWs/actuals into production seeds.
+- Phase 4 deployment approach is one Railway project with two services: the existing Railway Postgres service and one app service that builds the React client and starts the Express API. Express serves `client/dist`, so frontend and backend move together under one Railway domain.
+- Production scripts are Railway/Linux-safe: root `build` runs Prisma generate and client build, root `start` starts the API, and `nixpacks.toml` pins Node 22 with `npm ci`, `npm run build`, and `npm start`.
+- Frontend API calls use `VITE_API_URL` when supplied, localhost API during Vite dev, and same-origin `/api` in production.
+- `CLIENT_URL` supports comma-separated allowed origins for CORS. After Railway generates the app domain, set `CLIENT_URL` to that domain.
+- For Railway app and database in the same project, use the Railway Postgres internal/service `DATABASE_URL` reference for the app service. The public proxy URL can work from local machines but may be intermittently unreachable and should not be preferred for the deployed service.
+- Resource create/edit now separates operational resource profile data from planning/costing data.
+- Resource form tab `Identity and Skills` is now `Resource Profile`; it keeps identity/skill fields and also holds Location, Location Type, Engagement Type, Engagement Status, and Reporting Manager.
+- Resource form tab `Employment and Compensation` is now `Resource Planning and Costing`; HR/compliance fields such as Start Date / Joining Date, Notice Period, Visa / Work Authorization, and Background Check are no longer shown in the standard resource form.
+- Resource planning labels now use operational language: `Current Allocation %`, `Remaining Capacity %`, and `Current Engagement Roll-Off Date`.
+- Cost labels now use the approved language: `Costing Type`, `Cost Basis Amount`, and `Estimated Cost Rate`.
+- Blank `Costing Type` is allowed and means the estimated hourly cost rate is entered directly.
+- Estimated cost rate is visible to DM, Director, VP, COO, Finance, and Admin-level users; PM users do not see resource cost fields.
+- Raw costing setup fields are limited to Finance/Admin visibility in the current UI. Backend field names remain compatible with the existing actuals and financial calculations.
+- `Director` is seeded as an application role with the same cost and margin visibility as VP/COO/Finance.
+- Authorization is moving from hard-coded role checks to configurable role permissions.
+- Admin now includes a `Role Permissions` matrix where each role can be granted feature/action access such as `view`, `create`, `edit`, `delete`, `export`, `viewCost`, `viewMargin`, and `edit`.
+- The permission catalog currently covers Command Center, Clients, Resources, Resource Costing, Pipeline, SOWs, SOW Financials, Actuals, Resource Planning, Attachments, Master Data, Audit Logs, and Admin.
+- Login and `/api/auth/me` now return a `permissions` array such as `resourceCosting:view`; resource costing visibility uses this permission model with legacy `canViewCost` retained only as compatibility fallback.
+- Prisma schema is now pointed at PostgreSQL and includes relational authorization models: `AppRole`, `PermissionFeature`, and `RolePermission`.
+- Added a top-level `Financial Cockpit` menu item at `/financials`. This is a portfolio cockpit and does not replace SOW-level Financials.
+- Financial Cockpit uses `/api/financials` to aggregate planned-to-date versus actual revenue/cost/gross margin, margin %, actuals completion, monthly financial trends, revenue by client, margin leakage SOWs, missing actuals, and top revenue SOWs.
+- Financial Cockpit access is governed by the configurable `financialCockpit:view` permission.
+- Phase 1 database foundation is complete: `api/prisma/schema.prisma` now models the current MVP collections as PostgreSQL relational tables, including clients, users, resources, pipeline, SOWs, SOW roles, deployments, deployment month plans, actuals, milestones, SOW attachments, audit logs, SAP modules, currencies, regions, locations, experience levels, system configs, number ranges, app roles, permission features, and role permissions.
+- `api/scripts/importJsonToPostgres.js` supports master-data-only imports for the live MVP boundary. Full business import is development-only and should not be used for production seeding.
+- Root/API scripts include `db:migrate`, `db:seed`, `db:seed-master`, `db:import-json`, and development-only `db:import-full-json:dev`.
+- `api/.env.example` expects a PostgreSQL `DATABASE_URL`; local `.env` is configured for Railway Postgres in this workspace.
 
 ## Build Priorities
 1. Consistent screen system

@@ -42,7 +42,7 @@ function ensureDb() {
     }
   }
 
-  for (const key of ["skills", "currencies", "regions", "locations", "experienceLevels", "systemConfigs", "numberRanges", "appRoles", "users"]) {
+  for (const key of ["skills", "currencies", "regions", "locations", "experienceLevels", "systemConfigs", "numberRanges", "appRoles", "permissionFeatures", "rolePermissions"]) {
     const merged = mergeSeedRecords(current[key], seedData[key]);
     if (JSON.stringify(merged) !== JSON.stringify(current[key])) {
       current[key] = merged;

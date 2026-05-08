@@ -12,6 +12,7 @@ const tabs = [
   { key: "systemConfigs", label: "System Config" },
   { key: "numberRanges", label: "Number Ranges" },
   { key: "appRoles", label: "Roles" },
+  { key: "role-permissions", label: "Role Permissions" },
   { key: "users", label: "Users" },
   { key: "audit/logs", label: "Audit Log" }
 ];
@@ -41,9 +42,11 @@ export function AdminPage() {
     dateFrom: "",
     dateTo: ""
   });
+  const isRolePermissions = active === "role-permissions";
   const { data = [], refetch, isLoading } = useQuery({
     queryKey: ["admin", active],
-    queryFn: () => apiFetch(`/admin/${active}`)
+    queryFn: () => apiFetch(`/admin/${active}`),
+    enabled: !isRolePermissions
   });
 
   const isAudit = active === "audit/logs";
@@ -102,7 +105,7 @@ export function AdminPage() {
 
       <Section
         title={tabs.find((tab) => tab.key === active)?.label}
-        actions={!isAudit && !isSapModules ? <button onClick={() => setEditing({})} type="button">Add</button> : null}
+        actions={!isAudit && !isSapModules && !isRolePermissions ? <button onClick={() => setEditing({})} type="button">Add</button> : null}
       >
         {isAudit ? (
           <div className="admin-audit-filters">
@@ -134,13 +137,15 @@ export function AdminPage() {
             </button>
           </div>
         ) : null}
-        {isLoading ? <div className="loading">Loading...</div> : isSapModules ? (
+        {isRolePermissions ? (
+          <RolePermissionsAdmin />
+        ) : isLoading ? <div className="loading">Loading...</div> : isSapModules ? (
           <SapModulesAdmin rows={filteredRows} onSaved={refetch} />
         ) : (
           <DataTable columns={columns} rows={filteredRows} />
         )}
       </Section>
-      {editing ? (
+      {editing && !isRolePermissions ? (
         <AdminForm
           collection={active}
           record={editing}
@@ -276,6 +281,107 @@ function SapModulesAdmin({ rows, onSaved }) {
   );
 }
 
+function RolePermissionsAdmin() {
+  const { data, refetch, isLoading } = useQuery({
+    queryKey: ["admin", "role-permissions", "matrix"],
+    queryFn: () => apiFetch("/admin/role-permissions/matrix")
+  });
+  const roles = data?.roles || [];
+  const features = data?.features || [];
+  const permissions = data?.permissions || [];
+  const [selectedRole, setSelectedRole] = useState("");
+  const activeRole = selectedRole || roles[0]?.name || "";
+  const [draft, setDraft] = useState({});
+  const [message, setMessage] = useState("");
+
+  const rolePermissions = useMemo(() => {
+    const matrix = {};
+    permissions
+      .filter((permission) => permission.roleName === activeRole)
+      .forEach((permission) => {
+        matrix[`${permission.featureKey}:${permission.action}`] = Boolean(permission.allowed);
+      });
+    return { ...matrix, ...draft };
+  }, [activeRole, draft, permissions]);
+
+  function toggle(featureKey, action) {
+    const key = `${featureKey}:${action}`;
+    setDraft((current) => ({ ...current, [key]: !rolePermissions[key] }));
+    setMessage("");
+  }
+
+  async function save() {
+    const payload = {
+      roleName: activeRole,
+      permissions: features.flatMap((feature) =>
+        feature.actions.map((action) => ({
+          featureKey: feature.key,
+          action,
+          allowed: Boolean(rolePermissions[`${feature.key}:${action}`])
+        }))
+      )
+    };
+    await patchJson("/admin/role-permissions/matrix", payload);
+    setDraft({});
+    setMessage("Permissions saved. Users should sign out and sign back in to refresh access.");
+    await refetch();
+  }
+
+  if (isLoading) {
+    return <div className="loading">Loading permissions...</div>;
+  }
+
+  return (
+    <div className="role-permissions-admin">
+      <div className="role-permissions-toolbar">
+        <p className="muted">Configure screen and feature access by role. These permissions are the production model for Postgres migration.</p>
+        <div className="row-actions">
+          <select value={activeRole} onChange={(event) => { setSelectedRole(event.target.value); setDraft({}); setMessage(""); }}>
+            {roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}
+          </select>
+          <button type="button" onClick={save} disabled={!activeRole}>Save Permissions</button>
+        </div>
+      </div>
+      {message ? <div className="success-banner">{message}</div> : null}
+      <div className="permission-matrix">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Category</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {features.map((feature) => (
+              <tr key={feature.key}>
+                <td>
+                  <strong>{feature.name}</strong>
+                  <span className="muted small">{feature.key}</span>
+                </td>
+                <td>{feature.category || "-"}</td>
+                <td>
+                  <div className="permission-action-grid">
+                    {feature.actions.map((action) => {
+                      const key = `${feature.key}:${action}`;
+                      return (
+                        <label key={key} className="permission-toggle">
+                          <input type="checkbox" checked={Boolean(rolePermissions[key])} onChange={() => toggle(feature.key, action)} />
+                          <span>{action}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function SapModuleModal({ record, onClose, onSubmit }) {
   const [form, setForm] = useState({
     id: record.id || "",
@@ -292,7 +398,7 @@ function SapModuleModal({ record, onClose, onSubmit }) {
     <Modal title={`${form.id ? "Edit" : "Create"} SAP Module`} onClose={onClose}>
       <form className="form-grid modal-form two-up" onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}>
         <Field label="Code *"><input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="MM" required /></Field>
-        <Field label="Sort Order"><input type="number" min="0" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} /></Field>
+        <Field label="Sort Order"><input type="number" step="any" min="0" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} /></Field>
         <Field label="Name *"><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Materials Management" required /></Field>
         <Field label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Optional description" /></Field>
         <Field label="Active">
@@ -326,7 +432,7 @@ function SapSubModuleModal({ record, onClose, onSubmit }) {
     <Modal title={`${form.id ? "Edit" : "Create"} Sub-Module`} onClose={onClose}>
       <form className="form-grid modal-form two-up" onSubmit={(event) => { event.preventDefault(); onSubmit(form); }}>
         <Field label="Code *"><input value={form.code} onChange={(event) => setForm({ ...form, code: event.target.value })} placeholder="INV" required /></Field>
-        <Field label="Sort Order"><input type="number" min="0" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} /></Field>
+        <Field label="Sort Order"><input type="number" step="any" min="0" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} /></Field>
         <Field label="Name *"><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Inventory Management" required /></Field>
         <Field label="Description"><input value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} placeholder="Optional description" /></Field>
         <Field label="Active">
@@ -533,6 +639,7 @@ function getColumns(collection, setEditing) {
 
 function AdminForm({ collection, record, onClose, onSaved }) {
   const [form, setForm] = useState(normalizeForm(collection, record));
+  const [error, setError] = useState("");
 
   function update(key, value) {
     setForm({ ...form, [key]: value });
@@ -540,18 +647,24 @@ function AdminForm({ collection, record, onClose, onSaved }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    const payload = denormalizeForm(collection, form);
-    if (record.id) {
-      await patchJson(`/admin/${collection}/${record.id}`, payload);
-    } else {
-      await postJson(`/admin/${collection}`, payload);
+    setError("");
+    try {
+      const payload = denormalizeForm(collection, form);
+      if (record.id) {
+        await patchJson(`/admin/${collection}/${record.id}`, payload);
+      } else {
+        await postJson(`/admin/${collection}`, payload);
+      }
+      onSaved();
+    } catch (saveError) {
+      setError(saveError.message || "Unable to save.");
     }
-    onSaved();
   }
 
   return (
     <Modal title={`${record.id ? "Edit" : "Add"} ${collectionLabel(collection)}`} onClose={onClose}>
       <form className="form-grid modal-form two-up" onSubmit={handleSubmit}>
+        {error ? <div className="error-banner">{error}</div> : null}
         {Object.keys(form).map((key) => (
           <Field key={key} label={fieldLabel(key)}>
             {isBooleanField(key) ? (
@@ -566,7 +679,7 @@ function AdminForm({ collection, record, onClose, onSaved }) {
                 <option>Nearshore</option>
               </select>
             ) : (
-              <input type={isNumberField(key) ? "number" : "text"} min={isNumberField(key) ? "0" : undefined} value={form[key]} onChange={(event) => update(key, event.target.value)} />
+              <input type={isNumberField(key) ? "number" : "text"} min={isNumberField(key) ? "0" : undefined} step={isNumberField(key) ? "any" : undefined} value={form[key]} onChange={(event) => update(key, event.target.value)} />
             )}
           </Field>
         ))}
@@ -630,7 +743,7 @@ function denormalizeForm(collection, form) {
   if (collection === "regions") return { ...form, sortOrder: Number(form.sortOrder), active: form.active === "true" };
   if (collection === "locations") return { ...form, active: form.active === "true" };
   if (collection === "numberRanges") return { ...form, sequenceLength: Number(form.sequenceLength), nextNumber: Number(form.nextNumber), includeYear: form.includeYear === "true", active: form.active === "true" };
-  if (collection === "appRoles") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true" };
+  if (collection === "appRoles") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true", active: form.active === "true" };
   if (collection === "users") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true" };
   return form;
 }

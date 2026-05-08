@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Route, Routes } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, login } from "./lib/api";
@@ -13,13 +13,14 @@ import { OpportunityDetailPage } from "./pages/OpportunityDetailPage.jsx";
 import { SowWorkspacePage } from "./pages/SowWorkspacePage.jsx";
 import { ActualsWorkbenchPage, SowActualsDetailPage } from "./pages/ActualsWorkbenchPage.jsx";
 import { ResourcePlanningPage } from "./pages/ResourcePlanningPage.jsx";
+import { FinancialCockpitPage } from "./pages/FinancialCockpitPage.jsx";
 import { AdminPage } from "./pages/AdminPage.jsx";
 import { AccountFormPage, OpportunityFormPage, ResourceFormPage, SowFormPage } from "./pages/FormPages.jsx";
 import { OpportunityRoleFormPage, SowRoleFormPage } from "./pages/RolePages.jsx";
 
 function LoginScreen({ onAuthenticated }) {
   const [email, setEmail] = useState("coo@dcc.local");
-  const [password, setPassword] = useState("admin123");
+  const [password, setPassword] = useState("DccDemo!2026");
   const [error, setError] = useState("");
 
   async function handleSubmit(event) {
@@ -45,18 +46,18 @@ function LoginScreen({ onAuthenticated }) {
             First working MVP across foundation, resources, opportunities, and SOW visibility.
           </p>
         </div>
-        <form className="card form-grid" onSubmit={handleSubmit}>
+        <form className="card form-grid" onSubmit={handleSubmit} autoComplete="off">
           <label>
             Email
-            <input value={email} onChange={(event) => setEmail(event.target.value)} />
+            <input autoComplete="off" value={email} onChange={(event) => setEmail(event.target.value)} />
           </label>
           <label>
             Password
-            <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            <input autoComplete="new-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
           </label>
           {error ? <div className="error-banner">{error}</div> : null}
           <button type="submit">Sign in</button>
-          <p className="muted small">Demo login: `coo@dcc.local` / `admin123`</p>
+          <p className="muted small">Demo login: `coo@dcc.local` / `DccDemo!2026`</p>
         </form>
       </div>
     </div>
@@ -73,6 +74,7 @@ function Shell() {
     { to: "/sows", label: "SOWs" },
     { to: "/actuals", label: "Actuals" },
     { to: "/resource-planning", label: "Resource Planning" },
+    { to: "/financials", label: "Financial Cockpit" },
     { to: "/admin", label: "Admin" }
   ];
 
@@ -137,6 +139,7 @@ function Shell() {
             <Route path="/actuals" element={<ActualsWorkbenchPage />} />
             <Route path="/actuals/:id" element={<SowActualsDetailPage />} />
             <Route path="/resource-planning" element={<ResourcePlanningPage />} />
+            <Route path="/financials" element={<FinancialCockpitPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </ErrorBoundary>
@@ -159,6 +162,13 @@ export default function App() {
     queryFn: () => apiFetch("/auth/me"),
     enabled: Boolean(localStorage.getItem("dcc-token"))
   });
+
+  useEffect(() => {
+    if (meQuery.data) {
+      localStorage.setItem("dcc-user", JSON.stringify(meQuery.data));
+      setAuthenticatedUser(meQuery.data);
+    }
+  }, [meQuery.data]);
 
   if (!authenticatedUser && !meQuery.data) {
     return <LoginScreen onAuthenticated={setAuthenticatedUser} />;
