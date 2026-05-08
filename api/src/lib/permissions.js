@@ -45,5 +45,5 @@ export async function hydrateUserPermissionsFromDb(user) {
 
 export function can(user, featureKey, action) {
   const permissions = user?.permissions || permissionsForRole(user?.role);
-  return permissions.includes(`${featureKey}:${action}`);
+  return permissions.includes("*") || permissions.includes(`${featureKey}:*`) || permissions.includes(`${featureKey}:${action}`);
 }

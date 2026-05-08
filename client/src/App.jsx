@@ -18,6 +18,7 @@ import { FinancialCockpitPage } from "./pages/FinancialCockpitPage.jsx";
 import { AdminPage } from "./pages/AdminPage.jsx";
 import { AccountFormPage, OpportunityFormPage, ResourceFormPage, SowFormPage } from "./pages/FormPages.jsx";
 import { OpportunityRoleFormPage, SowRoleFormPage } from "./pages/RolePages.jsx";
+import { can, isPlatformAdmin } from "./lib/permissions.js";
 
 function LoginScreen({ onAuthenticated }) {
   const [email, setEmail] = useState("coo@dcc.local");
@@ -69,16 +70,16 @@ function Shell() {
   const user = JSON.parse(localStorage.getItem("dcc-user") || "{}");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const navItems = [
-    { to: "/", label: "Command Center" },
-    { to: "/accounts", label: "Clients" },
-    { to: "/resources", label: "Resources" },
-    { to: "/opportunities", label: "Pipeline" },
-    { to: "/sows", label: "SOWs" },
-    { to: "/actuals", label: "Actuals" },
-    { to: "/resource-planning", label: "Resource Planning" },
-    { to: "/financials", label: "Financial Cockpit" },
-    { to: "/admin", label: "Admin" }
-  ];
+    { to: "/", label: "Command Center", allowed: can(user, "commandCenter", "view") },
+    { to: "/accounts", label: "Clients", allowed: can(user, "clients", "view") },
+    { to: "/resources", label: "Resources", allowed: can(user, "resources", "view") },
+    { to: "/opportunities", label: "Pipeline", allowed: can(user, "opportunities", "view") },
+    { to: "/sows", label: "SOWs", allowed: can(user, "sows", "view") },
+    { to: "/actuals", label: "Actuals", allowed: can(user, "actuals", "view") },
+    { to: "/resource-planning", label: "Resource Planning", allowed: can(user, "resourcePlanning", "view") },
+    { to: "/financials", label: "Financial Cockpit", allowed: can(user, "financialCockpit", "view") },
+    { to: "/admin", label: "Admin", allowed: isPlatformAdmin(user) }
+  ].filter((item) => item.allowed);
 
   return (
     <div className="app-shell">
@@ -118,38 +119,54 @@ function Shell() {
         </header>
         <ErrorBoundary>
           <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/accounts" element={<AccountsPage />} />
-            <Route path="/accounts/new" element={<AccountFormPage />} />
-            <Route path="/accounts/:id/edit" element={<AccountFormPage />} />
-            <Route path="/resources" element={<ResourcesPage />} />
-            <Route path="/resources/new" element={<ResourceFormPage />} />
-            <Route path="/resources/:id" element={<ResourceDetailPage />} />
-            <Route path="/resources/:id/edit" element={<ResourceFormPage />} />
-            <Route path="/opportunities" element={<OpportunitiesPage />} />
-            <Route path="/opportunities/new" element={<OpportunityFormPage />} />
-            <Route path="/opportunities/:id" element={<OpportunityDetailPage />} />
-            <Route path="/opportunities/:id/edit" element={<OpportunityFormPage />} />
-            <Route path="/opportunities/:id/roles/new" element={<OpportunityRoleFormPage />} />
-            <Route path="/opportunities/:id/roles/:roleId/edit" element={<OpportunityRoleFormPage />} />
-            <Route path="/sows" element={<SowsPage />} />
-            <Route path="/sows/new" element={<SowFormPage />} />
-            <Route path="/sows/:id" element={<SowWorkspacePage />} />
-          <Route path="/sows/:id/edit" element={<SowWorkspacePage />} />
-            <Route path="/sows/:id/roles/new" element={<SowRoleFormPage />} />
-            <Route path="/sows/:id/roles/:roleId/edit" element={<SowRoleFormPage />} />
-            <Route path="/sows/:id/roles/:roleId/assign" element={<SowRoleFormPage />} />
-            <Route path="/actuals" element={<ActualsWorkbenchPage />} />
-            <Route path="/actuals/:id" element={<SowActualsDetailPage />} />
-            <Route path="/resource-planning" element={<ResourcePlanningPage />} />
-            <Route path="/financials" element={<FinancialCockpitPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/" element={<RequireAccess user={user} feature="commandCenter"><DashboardPage /></RequireAccess>} />
+            <Route path="/accounts" element={<RequireAccess user={user} feature="clients"><AccountsPage /></RequireAccess>} />
+            <Route path="/accounts/new" element={<RequireAccess user={user} feature="clients" action="create"><AccountFormPage /></RequireAccess>} />
+            <Route path="/accounts/:id/edit" element={<RequireAccess user={user} feature="clients" action="edit"><AccountFormPage /></RequireAccess>} />
+            <Route path="/resources" element={<RequireAccess user={user} feature="resources"><ResourcesPage /></RequireAccess>} />
+            <Route path="/resources/new" element={<RequireAccess user={user} feature="resources" action="create"><ResourceFormPage /></RequireAccess>} />
+            <Route path="/resources/:id" element={<RequireAccess user={user} feature="resources"><ResourceDetailPage /></RequireAccess>} />
+            <Route path="/resources/:id/edit" element={<RequireAccess user={user} feature="resources" action="edit"><ResourceFormPage /></RequireAccess>} />
+            <Route path="/opportunities" element={<RequireAccess user={user} feature="opportunities"><OpportunitiesPage /></RequireAccess>} />
+            <Route path="/opportunities/new" element={<RequireAccess user={user} feature="opportunities" action="create"><OpportunityFormPage /></RequireAccess>} />
+            <Route path="/opportunities/:id" element={<RequireAccess user={user} feature="opportunities"><OpportunityDetailPage /></RequireAccess>} />
+            <Route path="/opportunities/:id/edit" element={<RequireAccess user={user} feature="opportunities" action="edit"><OpportunityFormPage /></RequireAccess>} />
+            <Route path="/opportunities/:id/roles/new" element={<RequireAccess user={user} feature="opportunities" action="edit"><OpportunityRoleFormPage /></RequireAccess>} />
+            <Route path="/opportunities/:id/roles/:roleId/edit" element={<RequireAccess user={user} feature="opportunities" action="edit"><OpportunityRoleFormPage /></RequireAccess>} />
+            <Route path="/sows" element={<RequireAccess user={user} feature="sows"><SowsPage /></RequireAccess>} />
+            <Route path="/sows/new" element={<RequireAccess user={user} feature="sows" action="create"><SowFormPage /></RequireAccess>} />
+            <Route path="/sows/:id" element={<RequireAccess user={user} feature="sows"><SowWorkspacePage /></RequireAccess>} />
+            <Route path="/sows/:id/edit" element={<RequireAccess user={user} feature="sows" action="edit"><SowWorkspacePage /></RequireAccess>} />
+            <Route path="/sows/:id/roles/new" element={<RequireAccess user={user} feature="sows" action="edit"><SowRoleFormPage /></RequireAccess>} />
+            <Route path="/sows/:id/roles/:roleId/edit" element={<RequireAccess user={user} feature="sows" action="edit"><SowRoleFormPage /></RequireAccess>} />
+            <Route path="/sows/:id/roles/:roleId/assign" element={<RequireAccess user={user} feature="sows" action="edit"><SowRoleFormPage /></RequireAccess>} />
+            <Route path="/actuals" element={<RequireAccess user={user} feature="actuals"><ActualsWorkbenchPage /></RequireAccess>} />
+            <Route path="/actuals/:id" element={<RequireAccess user={user} feature="actuals"><SowActualsDetailPage /></RequireAccess>} />
+            <Route path="/resource-planning" element={<RequireAccess user={user} feature="resourcePlanning"><ResourcePlanningPage /></RequireAccess>} />
+            <Route path="/financials" element={<RequireAccess user={user} feature="financialCockpit"><FinancialCockpitPage /></RequireAccess>} />
+            <Route path="/admin" element={<RequireAccess user={user} platformAdmin><AdminPage /></RequireAccess>} />
           </Routes>
         </ErrorBoundary>
       </main>
       {showPasswordModal ? <ChangePasswordModal onClose={() => setShowPasswordModal(false)} /> : null}
     </div>
   );
+}
+
+function RequireAccess({ user, feature, action = "view", platformAdmin = false, children }) {
+  const allowed = platformAdmin ? isPlatformAdmin(user) : can(user, feature, action);
+  if (!allowed) {
+    return (
+      <section className="workspace-header">
+        <div>
+          <p className="eyebrow">Access Control</p>
+          <h2>Access denied</h2>
+          <p className="muted">Your role is not authorized for this screen or action.</p>
+        </div>
+      </section>
+    );
+  }
+  return children;
 }
 
 function ChangePasswordModal({ onClose }) {

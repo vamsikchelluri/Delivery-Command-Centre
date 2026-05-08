@@ -7,7 +7,12 @@ export function currentUser() {
 }
 
 export function can(user, featureKey, action) {
-  return (user?.permissions || []).includes(`${featureKey}:${action}`);
+  const permissions = user?.permissions || [];
+  return permissions.includes("*") || permissions.includes(`${featureKey}:*`) || permissions.includes(`${featureKey}:${action}`);
+}
+
+export function isPlatformAdmin(user = currentUser()) {
+  return ["COO", "Super Admin"].includes(user?.role);
 }
 
 export function canViewResourceCost(user = currentUser()) {

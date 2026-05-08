@@ -2,10 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { can, currentUser } from "../lib/permissions";
 import { DataTable, PageHeaderCard, Section, StatCard } from "../components.jsx";
 
 export function OpportunitiesPage() {
   const navigate = useNavigate();
+  const user = currentUser();
+  const canCreate = can(user, "opportunities", "create");
+  const canEdit = can(user, "opportunities", "edit");
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("All Stages");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
@@ -52,7 +56,7 @@ export function OpportunitiesPage() {
                 {dmOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </div>
-            <button onClick={() => navigate("/opportunities/new")}>Add Opportunity</button>
+            {canCreate ? <button onClick={() => navigate("/opportunities/new")}>Add Opportunity</button> : null}
           </div>
         }
       />
@@ -95,16 +99,18 @@ export function OpportunitiesPage() {
                     >
                       View
                     </button>
-                    <button
-                      className="tiny-button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/opportunities/${row.id}/edit`);
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
+                    {canEdit ? (
+                      <button
+                        className="tiny-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/opportunities/${row.id}/edit`);
+                        }}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
                   </div>
                 )
               }

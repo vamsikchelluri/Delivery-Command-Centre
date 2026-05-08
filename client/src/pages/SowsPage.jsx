@@ -2,10 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
+import { can, currentUser } from "../lib/permissions";
 import { DataTable, PageHeaderCard, Section, StatCard } from "../components.jsx";
 
 export function SowsPage() {
   const navigate = useNavigate();
+  const user = currentUser();
+  const canCreate = can(user, "sows", "create");
+  const canEdit = can(user, "sows", "edit");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [billingFilter, setBillingFilter] = useState("All Billing");
@@ -51,7 +55,7 @@ export function SowsPage() {
                 {dmOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </div>
-            <button onClick={() => navigate("/sows/new")}>Add SOW</button>
+            {canCreate ? <button onClick={() => navigate("/sows/new")}>Add SOW</button> : null}
           </div>
         }
       />
@@ -105,16 +109,18 @@ export function SowsPage() {
                     >
                       View
                     </button>
-                    <button
-                      className="tiny-button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/sows/${row.id}/edit`);
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
+                    {canEdit ? (
+                      <button
+                        className="tiny-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/sows/${row.id}/edit`);
+                        }}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
                   </div>
                 )
               }

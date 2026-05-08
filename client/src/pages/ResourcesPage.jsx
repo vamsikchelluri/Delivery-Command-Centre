@@ -2,13 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../lib/api";
-import { canViewResourceCost, currentUser } from "../lib/permissions";
+import { can, canViewResourceCost, currentUser } from "../lib/permissions";
 import { DataTable, PageHeaderCard, Section, StatCard } from "../components.jsx";
 
 export function ResourcesPage() {
   const navigate = useNavigate();
   const user = currentUser();
   const canViewCost = canViewResourceCost(user);
+  const canCreate = can(user, "resources", "create");
+  const canEdit = can(user, "resources", "edit");
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("All Locations");
   const [typeFilter, setTypeFilter] = useState("All Engagement Types");
@@ -57,7 +59,7 @@ export function ResourcesPage() {
                 {statusOptions.map((option) => <option key={option}>{option}</option>)}
               </select>
             </div>
-            <button onClick={() => navigate("/resources/new")}>Add Resource</button>
+            {canCreate ? <button onClick={() => navigate("/resources/new")}>Add Resource</button> : null}
           </div>
         }
       />
@@ -101,16 +103,18 @@ export function ResourcesPage() {
                     >
                       View
                     </button>
-                    <button
-                      className="tiny-button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/resources/${row.id}/edit`);
-                      }}
-                      type="button"
-                    >
-                      Edit
-                    </button>
+                    {canEdit ? (
+                      <button
+                        className="tiny-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/resources/${row.id}/edit`);
+                        }}
+                        type="button"
+                      >
+                        Edit
+                      </button>
+                    ) : null}
                   </div>
                 )
               }
