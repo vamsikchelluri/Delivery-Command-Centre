@@ -2,13 +2,22 @@ import { Router } from "express";
 import { z } from "zod";
 import { createAccessToken, verifyPassword } from "../lib/auth.js";
 import { requireAuth } from "../middleware/auth.js";
-import { hydrateUserPermissionsFromDb } from "../lib/permissions.js";
+import { hydrateUserPermissions, hydrateUserPermissionsFromDb } from "../lib/permissions.js";
 import { getCollection } from "../data/store.js";
 
 const router = Router();
 
 function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
+async function hydrateUserPermissionsForLogin(user) {
+  try {
+    return await hydrateUserPermissionsFromDb(user);
+  } catch (error) {
+    console.error("Unable to load Postgres permissions; using local fallback permissions.", error);
+    return hydrateUserPermissions(user);
+  }
 }
 
 router.post("/login", asyncRoute(async (req, res) => {
@@ -35,7 +44,7 @@ router.post("/login", asyncRoute(async (req, res) => {
     return res.status(401).json({ message: "Invalid credentials" });
   }
 
-  const authorizedUser = await hydrateUserPermissionsFromDb(user);
+  const authorizedUser = await hydrateUserPermissionsForLogin(user);
   const token = createAccessToken(authorizedUser);
 
   return res.json({
@@ -59,7 +68,7 @@ router.get("/me", requireAuth, asyncRoute(async (req, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  const authorizedUser = await hydrateUserPermissionsFromDb(user);
+  const authorizedUser = await hydrateUserPermissionsForLogin(user);
 
   return res.json({
     id: authorizedUser.id,
