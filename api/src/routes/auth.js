@@ -4,6 +4,7 @@ import { createAccessToken, hashPassword, verifyPassword } from "../lib/auth.js"
 import { requireAuth } from "../middleware/auth.js";
 import { hydrateUserPermissions, hydrateUserPermissionsFromDb } from "../lib/permissions.js";
 import { getCollection, updateRecord } from "../data/store.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 
@@ -108,6 +109,7 @@ router.patch("/change-password", requireAuth, asyncRoute(async (req, res) => {
     passwordHash: await hashPassword(parsed.data.newPassword),
     passwordChangedAt: new Date().toISOString()
   });
+  if (!(await ensurePersisted(res))) return;
 
   return res.json({ ok: true });
 }));

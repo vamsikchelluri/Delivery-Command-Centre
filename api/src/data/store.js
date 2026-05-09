@@ -154,11 +154,7 @@ function cleanForPrisma(collection, record) {
 }
 
 function enqueueWrite(task) {
-  writeQueue = writeQueue
-    .then(task)
-    .catch((error) => {
-      console.error("Postgres write-through failed", error);
-    });
+  writeQueue = writeQueue.then(task, task);
   return writeQueue;
 }
 
@@ -346,5 +342,11 @@ export function getDatabaseSnapshot() {
 }
 
 export async function flushStoreWrites() {
-  await writeQueue;
+  try {
+    await writeQueue;
+  } catch (error) {
+    console.error("Postgres write-through failed", error);
+    writeQueue = Promise.resolve();
+    throw error;
+  }
 }

@@ -165,6 +165,13 @@
 - Root/API scripts include `db:migrate`, `db:seed`, `db:seed-master`, `db:import-json`, and development-only `db:import-full-json:dev`.
 - `api/.env.example` expects a PostgreSQL `DATABASE_URL`; local `.env` is configured for Railway Postgres in this workspace.
 
+## Current Build Notes - 2026-05-09
+- Runtime business collections now hydrate from Railway Postgres through `api/src/data/store.js`; `db.json` is only a bootstrap fallback when a table is empty.
+- Create/update/delete flows for clients, resources, opportunities, SOWs, child records, admin local collections, and password changes now wait for queued Postgres persistence before returning success.
+- If Postgres rejects a write, the API returns a `500` save failure instead of silently keeping the record only in server memory.
+- This hardening prevents the prior failure mode where a newly entered SOW/role/deployment could appear in the running app but vanish after a Railway redeploy because the Postgres write had failed.
+- The SOW that vanished after the deployment-plan fix was not present in Railway Postgres and cannot be recovered from the current database state; it needs to be recreated unless Railway backups or logs contain it.
+
 ## Build Priorities
 1. Consistent screen system
 2. Complete CRUD for header and child objects

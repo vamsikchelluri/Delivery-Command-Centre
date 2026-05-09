@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateNumber, hydrateCounter } from "../lib/numbering.js";
 import { addRecord, getCollection, nextDocumentNumber, updateRecord } from "../data/store.js";
 import { deriveCurrentResourceState, localDateKey } from "../lib/resourceStatus.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 
@@ -142,6 +143,7 @@ router.post("/", async (req, res) => {
     ...parsed.data
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.status(201).json(resource);
 });
 
@@ -195,6 +197,7 @@ router.patch("/:id", async (req, res) => {
     return res.status(404).json({ message: "Resource not found" });
   }
 
+  if (!(await ensurePersisted(res))) return;
   res.json(resource);
 });
 

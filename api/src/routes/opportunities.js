@@ -3,6 +3,7 @@ import { z } from "zod";
 import { weightedValue } from "../lib/dashboard.js";
 import { generateNumber, hydrateCounter } from "../lib/numbering.js";
 import { addAudit, addRecord, getCollection, nextDocumentNumber, updateRecord } from "../data/store.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 const stageDefaults = {
@@ -109,6 +110,7 @@ router.post("/", async (req, res) => {
     sourceScreen: "Opportunity"
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.status(201).json(opportunity);
 });
 
@@ -184,6 +186,7 @@ router.patch("/:id", async (req, res) => {
     sourceScreen: "Opportunity"
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.json(opportunity);
 });
 

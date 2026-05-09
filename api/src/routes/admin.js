@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addAudit, addRecord, deleteRecord, getCollection, nextDocumentNumber, updateRecord, upsertRecord } from "../data/store.js";
 import { hashPassword } from "../lib/auth.js";
 import { DEFAULT_OVERHEAD_RULES, OVERHEAD_RULES_CONFIG_KEY, normalizeOverheadRule } from "../lib/overheadRules.js";
+import { ensurePersisted } from "../lib/persistence.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -426,6 +427,7 @@ router.post("/:collection", asyncRoute(async (req, res) => {
       newValue: sanitizeUser(record),
       sourceScreen: "Admin"
     });
+    if (!(await ensurePersisted(res))) return;
     return res.status(201).json(sanitizeUser(record));
   }
 
@@ -445,6 +447,7 @@ router.post("/:collection", asyncRoute(async (req, res) => {
   }
 
   const record = upsertRecord(req.params.collection, payload, req.user?.name || "Unknown", "Admin");
+  if (!(await ensurePersisted(res))) return;
   return res.status(201).json(req.params.collection === "users" ? sanitizeUser(record) : record);
 }));
 
@@ -525,6 +528,7 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
     sourceScreen: "Admin"
   });
 
+  if (!(await ensurePersisted(res))) return;
   return res.json(req.params.collection === "users" ? sanitizeUser(updated) : updated);
 }));
 
@@ -569,6 +573,7 @@ router.delete("/:collection/:id", asyncRoute(async (req, res) => {
     sourceScreen: "Admin"
   });
 
+  if (!(await ensurePersisted(res))) return;
   return res.json(req.params.collection === "users" ? sanitizeUser(deleted) : deleted);
 }));
 

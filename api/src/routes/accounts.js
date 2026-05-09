@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { generateNumber, hydrateCounter } from "../lib/numbering.js";
 import { addAudit, addRecord, getCollection, nextDocumentNumber, updateRecord } from "../data/store.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 const clientStatuses = ["ACTIVE", "INACTIVE", "TERMINATED"];
@@ -52,6 +53,7 @@ router.post("/", async (req, res) => {
     sourceScreen: "Clients"
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.status(201).json(account);
 });
 
@@ -90,6 +92,7 @@ router.patch("/:id", async (req, res) => {
     sourceScreen: "Clients"
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.json(account);
 });
 

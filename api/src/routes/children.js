@@ -3,6 +3,7 @@ import { z } from "zod";
 import { addAudit, deleteRecord, getCollection, nextDocumentNumber, updateRecord, upsertRecord } from "../data/store.js";
 import { weightedValue } from "../lib/dashboard.js";
 import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 
@@ -326,6 +327,7 @@ router.post("/:collection", async (req, res) => {
   if (req.params.collection === "opportunityRoles") {
     refreshOpportunityTotals(record.opportunityId);
   }
+  if (!(await ensurePersisted(res))) return;
   return res.status(201).json(record);
 });
 
@@ -356,10 +358,11 @@ router.patch("/:collection/:id", async (req, res) => {
   if (req.params.collection === "opportunityRoles") {
     refreshOpportunityTotals(updated.opportunityId);
   }
+  if (!(await ensurePersisted(res))) return;
   return res.json(updated);
 });
 
-router.delete("/:collection/:id", (req, res) => {
+router.delete("/:collection/:id", async (req, res) => {
   const setup = collectionConfig(req.params.collection);
   if (!setup) {
     return res.status(404).json({ message: "Unknown child collection" });
@@ -378,6 +381,7 @@ router.delete("/:collection/:id", (req, res) => {
     newValue: null,
     sourceScreen: "Child CRUD"
   });
+  if (!(await ensurePersisted(res))) return;
   return res.json(deleted);
 });
 

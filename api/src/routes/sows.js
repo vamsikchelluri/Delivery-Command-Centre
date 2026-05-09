@@ -4,6 +4,7 @@ import { computeGrossMarginPercent } from "../lib/dashboard.js";
 import { generateNumber, hydrateCounter } from "../lib/numbering.js";
 import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
 import { addAudit, addRecord, getCollection, nextDocumentNumber, updateRecord } from "../data/store.js";
+import { ensurePersisted } from "../lib/persistence.js";
 
 const router = Router();
 const sowStatuses = ["DRAFT", "ACTIVE", "INACTIVE", "ON_HOLD", "COMPLETED", "TERMINATED"];
@@ -208,6 +209,7 @@ router.post("/", async (req, res) => {
     }
   }
 
+  if (!(await ensurePersisted(res))) return;
   res.status(201).json(sow);
 });
 
@@ -277,6 +279,7 @@ router.patch("/:id", async (req, res) => {
     sourceScreen: "SOW"
   });
 
+  if (!(await ensurePersisted(res))) return;
   res.json(sow);
 });
 
