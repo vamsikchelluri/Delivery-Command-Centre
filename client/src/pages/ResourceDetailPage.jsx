@@ -3,10 +3,17 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 import { canEditResourceCost, canViewResourceCost, currentUser } from "../lib/permissions";
+import { DEFAULT_OVERHEAD_RULES, findOverheadRule } from "../lib/overheadRules";
 import { DataTable, Section, StatCard } from "../components.jsx";
 
 function formatDate(value) {
   return value ? String(value).slice(0, 10) : "-";
+}
+
+function overheadRuleLabel(rule, engagementType, locationType) {
+  const percent = Number(rule?.overheadPercent || 0);
+  const hourlyAddOn = Number(rule?.hourlyAddOn || 0);
+  return `${engagementType || "Default"} / ${locationType || "Default"}: ${percent}% + $${hourlyAddOn}/hr`;
 }
 
 export function ResourceDetailPage() {
@@ -16,6 +23,10 @@ export function ResourceDetailPage() {
   const { data: resource, isLoading } = useQuery({
     queryKey: ["resource", id],
     queryFn: () => apiFetch(`/resources/${id}`)
+  });
+  const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({
+    queryKey: ["admin", "overhead-rules"],
+    queryFn: () => apiFetch("/admin/overhead-rules")
   });
 
   if (isLoading) return <div className="loading">Loading resource...</div>;
@@ -28,6 +39,8 @@ export function ResourceDetailPage() {
   const currentAvailablePercent = Number(resource.currentAvailablePercent || 0);
   const currentActiveSow = resource.currentActiveSowName || "None";
   const currentDeliveryStatus = resource.currentDeliveryStatusLabel || resource.currentDeliveryStatus || "Available";
+  const configuredOverheadRule = findOverheadRule(overheadRules, resource.employmentType, resource.locationType);
+  const configuredOverheadLabel = overheadRuleLabel(configuredOverheadRule, resource.employmentType, resource.locationType);
   const costFormulaHint =
     resource.costCalculationMode === "Offshore Employee"
       ? "(CTC / FX / hours) + configured overhead"
@@ -145,8 +158,6 @@ export function ResourceDetailPage() {
               <div><span>Costing Type</span><strong>{resource.compensationInputType || "Direct estimated cost rate"}</strong></div>
               <div><span>Cost Basis Amount</span><strong>{resource.compensationValue || 0}</strong></div>
               <div><span>Cost Currency</span><strong>{resource.compensationCurrency || "-"}</strong></div>
-              <div><span>Payment Terms</span><strong>{resource.paymentTerms || "-"}</strong></div>
-              <div><span>Payment Currency</span><strong>{resource.paymentCurrency || "-"}</strong></div>
             </div>
           </Section> : null}
           {canViewCost ? <Section title="Costing Calculation Reference">
@@ -158,7 +169,7 @@ export function ResourceDetailPage() {
               <div><span>Estimated Cost Rate</span><strong>${resource.costRate}/hr</strong></div>
               <div><span>FX Rate Used</span><strong>{resource.fxRateUsed || "-"} {resource.compensationCurrency || "USD"}/USD</strong></div>
               <div><span>Standard Hours Per Year</span><strong>1800</strong></div>
-              <div><span>Overhead Multiplier</span><strong>1.2</strong></div>
+              <div><span>Configured Overhead Rule</span><strong>{configuredOverheadLabel}</strong></div>
               <div><span>Cost Formula Hint</span><strong>{costFormulaHint}</strong></div>
             </div>
           </Section> : null}

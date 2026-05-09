@@ -51,17 +51,6 @@ function latestDateValue(...values) {
   return new Date(Math.max(...dates.map((date) => date.getTime()))).toISOString();
 }
 
-function earliestDateValue(...values) {
-  const dates = values
-    .filter(Boolean)
-    .map((value) => new Date(value))
-    .filter((date) => !Number.isNaN(date.getTime()));
-  if (!dates.length) {
-    return "";
-  }
-  return new Date(Math.min(...dates.map((date) => date.getTime()))).toISOString();
-}
-
 function latestPlanMonthEnd({ role, deployment, actuals, deploymentPlans }) {
   const monthValues = [
     ...deploymentPlans
@@ -159,7 +148,7 @@ function hydrateDeploymentActuals({ sow, role, deployment, resource, actuals, de
     role.endDate,
     latestPlanMonthEnd({ role, deployment, actuals, deploymentPlans })
   );
-  const effectiveEndDate = earliestDateValue(uncappedEndDate, sow.endDate) || uncappedEndDate || sow.endDate;
+  const effectiveEndDate = uncappedEndDate || sow.endDate;
   const monthRows = monthsBetween(effectiveStartDate, effectiveEndDate).map((month) => {
     const monthId = monthKey(month);
     const actual = actuals.find((item) => item.deploymentId === deployment.id && String(item.month || "").slice(0, 10) === monthId);

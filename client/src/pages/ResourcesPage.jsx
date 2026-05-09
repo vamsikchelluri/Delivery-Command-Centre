@@ -13,23 +13,29 @@ export function ResourcesPage() {
   const canEdit = can(user, "resources", "edit");
   const [search, setSearch] = useState("");
   const [locationFilter, setLocationFilter] = useState("All Locations");
-  const [typeFilter, setTypeFilter] = useState("All Engagement Types");
   const [statusFilter, setStatusFilter] = useState("All Status");
+  const [clientFilter, setClientFilter] = useState("All Clients");
+  const [pmFilter, setPmFilter] = useState("All PMs");
+  const [dmFilter, setDmFilter] = useState("All DMs");
   const { data = [], isLoading } = useQuery({
     queryKey: ["resources"],
     queryFn: () => apiFetch("/resources")
   });
 
   const locationOptions = ["All Locations", ...new Set(data.map((item) => item.location || "Unassigned"))];
-  const typeOptions = ["All Engagement Types", ...new Set(data.map((item) => item.employmentType || "Unknown"))];
   const statusOptions = ["All Status", ...new Set(data.map((item) => item.currentDeliveryStatusLabel || item.deliveryStatus || "Unknown"))];
+  const clientOptions = ["All Clients", ...new Set(data.map((item) => item.currentClientName || "Unassigned"))];
+  const pmOptions = ["All PMs", ...new Set(data.map((item) => item.currentProjectManagerName || "Unassigned"))];
+  const dmOptions = ["All DMs", ...new Set(data.map((item) => item.currentDeliveryManagerName || "Unassigned"))];
   const filtered = data.filter((row) => {
     const text = `${row.firstName} ${row.lastName} ${row.primarySkill} ${row.subModule || ""} ${(row.primarySubModules || []).join(" ")}`.toLowerCase();
     const matchesSearch = !search || text.includes(search.toLowerCase());
     const matchesLocation = locationFilter === "All Locations" || (row.location || "Unassigned") === locationFilter;
-    const matchesType = typeFilter === "All Engagement Types" || (row.employmentType || "Unknown") === typeFilter;
     const matchesStatus = statusFilter === "All Status" || (row.currentDeliveryStatusLabel || row.deliveryStatus || "Unknown") === statusFilter;
-    return matchesSearch && matchesLocation && matchesType && matchesStatus;
+    const matchesClient = clientFilter === "All Clients" || (row.currentClientName || "Unassigned") === clientFilter;
+    const matchesPm = pmFilter === "All PMs" || (row.currentProjectManagerName || "Unassigned") === pmFilter;
+    const matchesDm = dmFilter === "All DMs" || (row.currentDeliveryManagerName || "Unassigned") === dmFilter;
+    return matchesSearch && matchesLocation && matchesStatus && matchesClient && matchesPm && matchesDm;
   });
   const totalCount = filtered.length;
   const statusCounts = {
@@ -46,23 +52,23 @@ export function ResourcesPage() {
         title="Resource Management"
         subtitle="Resource profiles, skills, capacity, and deployment history."
         actions={
-          <div className="register-header-actions">
-            <div className="register-filter-bar">
-              <input placeholder="Search name, skill..." value={search} onChange={(event) => setSearch(event.target.value)} />
-              <select value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}>
-                {locationOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
-                {typeOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                {statusOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </div>
-            {canCreate ? <button onClick={() => navigate("/resources/new")}>Add Resource</button> : null}
-          </div>
+          canCreate ? <button onClick={() => navigate("/resources/new")}>Add Resource</button> : null
         }
       />
+      <div className="financial-filter-panel resource-filter-panel">
+        <div>
+          <strong>Filters apply to resource register</strong>
+          <small>Client, PM, and DM use the current active SOW assignment.</small>
+        </div>
+        <div className="financial-filter-grid resource-filter-grid refined">
+          <label><span>Search</span><input placeholder="Name, skill..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <label><span>Location</span><select value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}>{locationOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>{statusOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Client</span><select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>{clientOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Project Manager</span><select value={pmFilter} onChange={(event) => setPmFilter(event.target.value)}>{pmOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Delivery Manager</span><select value={dmFilter} onChange={(event) => setDmFilter(event.target.value)}>{dmOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+        </div>
+      </div>
       <div className="stats-grid register-kpi-row">
         <StatCard label="Total" value={totalCount} />
         <StatCard label="Fully Deployed" value={statusCounts.fully} />

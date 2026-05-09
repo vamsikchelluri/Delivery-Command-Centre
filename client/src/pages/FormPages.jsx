@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, patchJson, postJson } from "../lib/api";
 import { canEditResourceCost, canViewResourceCost, currentUser } from "../lib/permissions";
-import { DEFAULT_OVERHEAD_RULES, applyOverheadToBaseCost } from "../lib/overheadRules";
+import { DEFAULT_OVERHEAD_RULES, applyOverheadToBaseCost, findOverheadRule } from "../lib/overheadRules";
 import { DataTable, Field, Section } from "../components.jsx";
 
 export function SaveBar({ backTo, label }) {
@@ -54,6 +54,9 @@ function subModuleName(subModule) {
 }
 
 function allowedCompensationTypes(locationType, employmentType) {
+  if (locationType === "Offshore" && employmentType === "C2C") {
+    return ["Annual CTC", "Hourly Rate", "Monthly Rate"];
+  }
   if (locationType === "Offshore" && ["Full-Time", "Part-Time"].includes(employmentType)) {
     return ["Annual CTC", "Hourly Rate", "Monthly Rate"];
   }
@@ -61,6 +64,26 @@ function allowedCompensationTypes(locationType, employmentType) {
     return ["Annual Salary", "Hourly Rate", "Monthly Rate"];
   }
   return ["Hourly Rate", "Monthly Rate"];
+}
+
+function defaultLocationForType(locations, locationType) {
+  const targets = {
+    Offshore: ["india"],
+    Onsite: ["usa", "united states", "us"],
+    Nearshore: ["canada"]
+  };
+  const accepted = targets[locationType] || [];
+  return locations.find((location) =>
+    location.active !== false &&
+    location.locationType === locationType &&
+    accepted.some((target) => String(location.name || "").toLowerCase().includes(target))
+  ) || locations.find((location) => location.active !== false && location.locationType === locationType);
+}
+
+function overheadRuleLabel(rule, engagementType, locationType) {
+  const percent = Number(rule?.overheadPercent || 0);
+  const hourlyAddOn = Number(rule?.hourlyAddOn || 0);
+  return `${engagementType || "Default"} / ${locationType || "Default"}: ${percent}% + $${hourlyAddOn}/hr`;
 }
 
 export function AccountFormPage() {
@@ -213,6 +236,8 @@ export function ResourceFormPage() {
     ? ["NA (Offshore)"]
     : ["H1B", "OPT", "Green Card", "US Citizen", "L1", "Other"];
   const compensationTypeOptions = ["", ...allowedCompensationTypes(form.locationType, form.employmentType)];
+  const configuredOverheadRule = findOverheadRule(overheadRules, form.employmentType, form.locationType);
+  const configuredOverheadLabel = overheadRuleLabel(configuredOverheadRule, form.employmentType, form.locationType);
   const costFormulaHint =
     form.costCalculationMode === "Offshore Employee"
       ? "(CTC / FX / hours) + configured overhead"
@@ -295,6 +320,17 @@ export function ResourceFormPage() {
     });
   }
 
+  function updateLocationType(locationType) {
+    const location = defaultLocationForType(locationOptions, locationType);
+    setForm({
+      ...form,
+      locationType,
+      location: location?.name || form.location,
+      compensationCurrency: location?.defaultCompensationCurrency || form.compensationCurrency,
+      paymentCurrency: location?.defaultPaymentCurrency || form.paymentCurrency
+    });
+  }
+
   function selectedValues(event) {
     return Array.from(event.target.selectedOptions).map((option) => option.value);
   }
@@ -366,7 +402,7 @@ export function ResourceFormPage() {
                   {locationOptions.map((location) => <option key={location.id} value={location.name}>{location.name}</option>)}
                 </select>
               </Field>
-              <Field label="Location Type"><select value={form.locationType} onChange={(event) => setForm({ ...form, locationType: event.target.value })}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
+              <Field label="Location Type"><select value={form.locationType} onChange={(event) => updateLocationType(event.target.value)}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
               <Field label="Engagement Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}><option>Full-Time</option><option>Part-Time</option><option>Contractor</option><option>C2C</option></select></Field>
               <Field label="Engagement Status"><select value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value })}><option value="ACTIVE">Active</option><option value="ON_LEAVE">Unavailable</option><option value="SABBATICAL">Extended Unavailable</option><option value="INACTIVE">Inactive</option><option value="TERMINATED">Inactive - Closed</option><option value="EXITED">Inactive - Ended</option></select></Field>
               <Field label="Primary SAP Module"><select value={form.primarySkill} onChange={(event) => setForm({ ...form, primarySkill: event.target.value, subModule: "", primarySubModules: [] })}>{skillOptions.map((skill) => <option key={skill.id}>{skill.name}</option>)}</select></Field>
@@ -454,19 +490,6 @@ export function ResourceFormPage() {
                 ) : canViewCost ? (
                   <Field label="Estimated Cost Rate"><input value={`$${form.costRate}/hr`} readOnly /></Field>
                 ) : null}
-                {canEditCost ? (
-                  <Field label="Payment Currency">
-                    <select value={form.paymentCurrency} onChange={(event) => setForm({ ...form, paymentCurrency: event.target.value })}>
-                      <option value="">Select</option>
-                      {currencyOptions.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}
-                    </select>
-                  </Field>
-                ) : null}
-                {canEditCost ? (
-                  <Field label="Payment Terms">
-                    <select value={form.paymentTerms} onChange={(event) => setForm({ ...form, paymentTerms: event.target.value })}><option>Monthly Payroll</option><option>Monthly Invoice</option><option>Bi-Weekly</option><option>Net 15</option><option>Net 30</option></select>
-                  </Field>
-                ) : null}
                 <div className="availability-exception-block">
                   <div>
                     <h3>Availability Exception</h3>
@@ -501,7 +524,7 @@ export function ResourceFormPage() {
                   <div><span>Estimated Cost Rate</span><strong>${form.costRate}/hr</strong></div>
                   <div><span>FX Rate Used</span><strong>{form.fxRateUsed} {form.compensationCurrency}/USD</strong></div>
                   <div><span>Standard Hours Per Year</span><strong>1800</strong></div>
-                  <div><span>Overhead Multiplier</span><strong>1.2</strong></div>
+                  <div><span>Configured Overhead Rule</span><strong>{configuredOverheadLabel}</strong></div>
                   <div><span>Cost Formula Hint</span><strong>{costFormulaHint}</strong></div>
                 </div>
               </Section>

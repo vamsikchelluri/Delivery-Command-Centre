@@ -45,12 +45,24 @@ router.get("/", async (_req, res) => {
   const deployments = getCollection("deployments");
   const roles = getCollection("sowRoles");
   const sows = getCollection("sows");
+  const accounts = getCollection("accounts");
   const resources = [...getCollection("resources")].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   hydrateCounter("RES", resources.map((item) => item.number));
   res.json(resources.map((resource) => {
     const hydrated = deriveCurrentResourceState(resource, { deployments, roles, sows }, todayKey);
+    const currentDeployment = (hydrated.deployments || []).find((deployment) =>
+      deployment.currentState === "Current" &&
+      deployment.status !== "CANCELLED" &&
+      deployment.sow?.status === "ACTIVE"
+    );
+    const currentAccount = accounts.find((account) => account.id === currentDeployment?.sow?.accountId);
     const { deployments: _deployments, ...summary } = hydrated;
-    return summary;
+    return {
+      ...summary,
+      currentClientName: currentAccount?.name || "",
+      currentProjectManagerName: currentDeployment?.sow?.projectManagerName || "",
+      currentDeliveryManagerName: currentDeployment?.sow?.deliveryManagerName || ""
+    };
   }));
 });
 

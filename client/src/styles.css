@@ -467,6 +467,10 @@ textarea {
   align-items: end;
 }
 
+.resource-filter-grid.refined {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
 .financial-filter-grid label {
   display: grid;
   gap: 0.18rem;
