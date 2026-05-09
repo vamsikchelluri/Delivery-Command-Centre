@@ -282,13 +282,13 @@ export function SowWorkspacePage() {
         actualCost: Number(row.actualCost.toFixed(2)),
         actualGrossMargin: Number((row.actualRevenue - row.actualCost).toFixed(2)),
         actualGrossMarginPercent: row.actualRevenue ? Number((((row.actualRevenue - row.actualCost) / row.actualRevenue) * 100).toFixed(2)) : 0,
-        varianceHours: Number((row.plannedHours - row.actualHours).toFixed(2)),
-        varianceRevenue: Number((row.plannedRevenue - row.actualRevenue).toFixed(2)),
-        varianceCost: Number((row.plannedCost - row.actualCost).toFixed(2)),
-        varianceGrossMargin: Number(((row.plannedRevenue - row.plannedCost) - (row.actualRevenue - row.actualCost)).toFixed(2)),
+        varianceHours: Number((row.actualHours - row.plannedHours).toFixed(2)),
+        varianceRevenue: Number((row.actualRevenue - row.plannedRevenue).toFixed(2)),
+        varianceCost: Number((row.actualCost - row.plannedCost).toFixed(2)),
+        varianceGrossMargin: Number(((row.actualRevenue - row.actualCost) - (row.plannedRevenue - row.plannedCost)).toFixed(2)),
         varianceGrossMarginPercent: Number((
-          (row.plannedRevenue ? ((row.plannedRevenue - row.plannedCost) / row.plannedRevenue) * 100 : 0) -
-          (row.actualRevenue ? ((row.actualRevenue - row.actualCost) / row.actualRevenue) * 100 : 0)
+          (row.actualRevenue ? ((row.actualRevenue - row.actualCost) / row.actualRevenue) * 100 : 0) -
+          (row.plannedRevenue ? ((row.plannedRevenue - row.plannedCost) / row.plannedRevenue) * 100 : 0)
         ).toFixed(2))
       }));
   }, [actualsPlan, roles]);
@@ -324,12 +324,12 @@ export function SowWorkspacePage() {
       actualCost: Number(totals.actualCost.toFixed(2)),
       actualGrossMargin,
       actualGrossMarginPercent: totals.actualRevenue ? Number(((actualGrossMargin / totals.actualRevenue) * 100).toFixed(2)) : 0,
-      varianceRevenue: Number((totals.plannedRevenue - totals.actualRevenue).toFixed(2)),
-      varianceCost: Number((totals.plannedCost - totals.actualCost).toFixed(2)),
-      varianceGrossMargin: Number((plannedGrossMargin - actualGrossMargin).toFixed(2)),
+      varianceRevenue: Number((totals.actualRevenue - totals.plannedRevenue).toFixed(2)),
+      varianceCost: Number((totals.actualCost - totals.plannedCost).toFixed(2)),
+      varianceGrossMargin: Number((actualGrossMargin - plannedGrossMargin).toFixed(2)),
       varianceGrossMarginPercent: Number((
-        (totals.plannedRevenue ? (plannedGrossMargin / totals.plannedRevenue) * 100 : 0) -
-        (totals.actualRevenue ? (actualGrossMargin / totals.actualRevenue) * 100 : 0)
+        (totals.actualRevenue ? (actualGrossMargin / totals.actualRevenue) * 100 : 0) -
+        (totals.plannedRevenue ? (plannedGrossMargin / totals.plannedRevenue) * 100 : 0)
       ).toFixed(2))
     };
   }, [monthlyFinancialRows]);
@@ -667,9 +667,9 @@ function varianceClass(type, value) {
     return "variance-neutral";
   }
   if (type === "cost") {
-    return amount < 0 ? "variance-bad" : "variance-good";
+    return amount > 0 ? "variance-bad" : "variance-good";
   }
-  return amount > 0 ? "variance-bad" : "variance-good";
+  return amount < 0 ? "variance-bad" : "variance-good";
 }
 
 function ProjectFinancialSummary({ summary, contractValue }) {

@@ -17,6 +17,16 @@ function monthKey(value) {
   return String(value).slice(0, 7);
 }
 
+function monthWithinRange(month, startDate, endDate) {
+  const key = monthKey(month);
+  if (!key) {
+    return false;
+  }
+  const start = monthKey(startDate);
+  const end = monthKey(endDate);
+  return (!start || key >= start) && (!end || key <= end);
+}
+
 function stageLabel(stage) {
   return String(stage || "UNKNOWN")
     .toLowerCase()
@@ -121,9 +131,12 @@ router.get("/", async (req, res) => {
   });
   const openOpportunities = scopedOpportunities.filter((item) => !["WON", "LOST"].includes(item.stage));
   const activeSows = scopedSows.filter((item) => item.status === "ACTIVE");
+  const activeSowIds = new Set(activeSows.map((sow) => sow.id));
+  const activeRoleIds = new Set(scopedRoles.filter((role) => activeSowIds.has(role.sowId)).map((role) => role.id));
+  const activeDeploymentIds = new Set(scopedDeployments.filter((deployment) => activeRoleIds.has(deployment.sowRoleId)).map((deployment) => deployment.id));
 
   const weightedPipeline = openOpportunities.reduce((sum, item) => sum + Number(item.weightedValue || 0), 0);
-  const scopedActuals = actuals.filter((actual) => scopedDeploymentIds.has(actual.deploymentId));
+  const scopedActuals = actuals.filter((actual) => activeDeploymentIds.has(actual.deploymentId));
   const currentMonthActuals = scopedActuals.filter((actual) => monthKey(actual.month) === currentMonth);
   function actualToFinancials(totals, actual) {
     const deployment = deployments.find((item) => item.id === actual.deploymentId);
@@ -142,6 +155,9 @@ router.get("/", async (req, res) => {
   function planToFinancials(totals, plan) {
     const deployment = plan.deploymentId ? deployments.find((item) => item.id === plan.deploymentId) : null;
     const role = roles.find((item) => item.id === (plan.sowRoleId || deployment?.sowRoleId));
+    if (!role || !monthWithinRange(plan.month, deployment?.startDate || role.startDate, deployment?.endDate || role.endDate)) {
+      return totals;
+    }
     const hours = quantityToHours(plan.plannedQuantity, plan.plannedUnit || role?.measurementUnit || "HOURS");
     const billRate = Number(deployment?.lockedBillRate || role?.billRate || 0);
     return {
@@ -171,7 +187,7 @@ router.get("/", async (req, res) => {
       ? deploymentPlans
         .filter((plan) =>
           monthKey(plan.month) === month &&
-          (scopedRoleIds.has(plan.sowRoleId) || scopedDeploymentIds.has(plan.deploymentId))
+          (activeRoleIds.has(plan.sowRoleId) || activeDeploymentIds.has(plan.deploymentId))
         )
         .reduce(planToFinancials, { actualHours: 0, visibleRevenue: 0, visibleCost: 0 })
       : scopedActuals
@@ -194,7 +210,7 @@ router.get("/", async (req, res) => {
   const currentActualsByDeployment = new Map(currentMonthActuals.map((actual) => [actual.deploymentId, actual]));
   const currentPlans = deploymentPlans.filter((plan) =>
     monthKey(plan.month) === currentMonth &&
-    (scopedRoleIds.has(plan.sowRoleId) || scopedDeploymentIds.has(plan.deploymentId))
+    (activeRoleIds.has(plan.sowRoleId) || activeDeploymentIds.has(plan.deploymentId))
   );
   const planByDeployment = new Map(currentPlans.filter((plan) => plan.deploymentId).map((plan) => [plan.deploymentId, plan]));
   const planByRole = new Map(currentPlans.filter((plan) => plan.sowRoleId).map((plan) => [plan.sowRoleId, plan]));

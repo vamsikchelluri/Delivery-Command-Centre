@@ -15,6 +15,16 @@ function monthKey(value) {
   return String(value || "").slice(0, 7);
 }
 
+function monthWithinRange(month, startDate, endDate) {
+  const key = monthKey(month);
+  if (!key) {
+    return false;
+  }
+  const start = monthKey(startDate);
+  const end = monthKey(endDate);
+  return (!start || key >= start) && (!end || key <= end);
+}
+
 function monthLabel(value) {
   const date = new Date(`${value}-01T00:00:00.000Z`);
   return Number.isNaN(date.getTime())
@@ -133,6 +143,7 @@ function plannedRow(plan, { rolesById, deploymentsById, resourcesById }) {
   const role = rolesById.get(plan.sowRoleId || deployment?.sowRoleId);
   const resource = deployment ? resourcesById.get(deployment.resourceId) : null;
   if (!role) return null;
+  if (!monthWithinRange(plan.month, deployment?.startDate || role.startDate, deployment?.endDate || role.endDate)) return null;
   const hours = quantityToHours(plan.plannedQuantity, plan.plannedUnit || role.measurementUnit || "HOURS");
   const billRate = Number(deployment?.lockedBillRate || role.billRate || 0);
   const costRate = Number(deployment?.lockedCostRate || resource?.costRate || role.costRate || role.loadedCostGuidance || role.costGuidance || 0);
@@ -202,8 +213,12 @@ router.get("/", (req, res) => {
   const actualRows = actuals
     .map((actual) => actualRow(actual, { rolesById, deploymentsById, resourcesById }))
     .filter((row) => row && scopedDeploymentIds.has(row.deploymentId) && monthInRange(row.month, req.query));
+  const actualMonthKeys = new Set(actualRows.map((row) => `${row.sowId}:${row.month}`));
+  const comparisonPlannedRows = actualRows.length
+    ? plannedRows.filter((row) => actualMonthKeys.has(`${row.sowId}:${row.month}`))
+    : plannedRows;
   const summary = finalizeTotals([
-    ...plannedRows,
+    ...comparisonPlannedRows,
     ...actualRows
   ].reduce((totals, row) => addFinancials(totals, row), emptyTotals("portfolio")));
 
@@ -232,7 +247,7 @@ router.get("/", (req, res) => {
       status: sow.status
     });
   });
-  plannedRows.forEach((row) => {
+  comparisonPlannedRows.forEach((row) => {
     const sow = sows.find((item) => item.id === row.sowId);
     const account = accountsById.get(sow?.accountId);
     addFinancials(sowMap.get(row.sowId), row);

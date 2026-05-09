@@ -16,6 +16,20 @@ function monthKey(date) {
   return date.toISOString().slice(0, 10);
 }
 
+function monthKeyValue(value) {
+  return String(value || "").slice(0, 7);
+}
+
+function monthWithinRange(value, startDate, endDate) {
+  const month = monthKeyValue(value);
+  if (!month) {
+    return false;
+  }
+  const start = monthKeyValue(startDate);
+  const end = monthKeyValue(endDate);
+  return (!start || month >= start) && (!end || month <= end);
+}
+
 function lastDayOfMonth(date) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0));
 }
@@ -52,15 +66,20 @@ function latestDateValue(...values) {
 }
 
 function latestPlanMonthEnd({ role, deployment, actuals, deploymentPlans }) {
+  const startDate = deployment.startDate || role.startDate;
+  const endDate = deployment.endDate || role.endDate;
   const monthValues = [
     ...deploymentPlans
       .filter((item) =>
-        (item.deploymentId && item.deploymentId === deployment.id) ||
-        (!item.deploymentId && item.sowRoleId === role.id)
+        (
+          (item.deploymentId && item.deploymentId === deployment.id) ||
+          (!item.deploymentId && item.sowRoleId === role.id)
+        ) &&
+        monthWithinRange(item.month, startDate, endDate)
       )
       .map((item) => item.month),
     ...actuals
-      .filter((item) => item.deploymentId === deployment.id)
+      .filter((item) => item.deploymentId === deployment.id && monthWithinRange(item.month, startDate, endDate))
       .map((item) => item.month)
   ];
   const monthStarts = monthValues

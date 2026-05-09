@@ -38,6 +38,24 @@ function weekSpanInclusive(startDate, endDate) {
   return Math.max(1, Math.round(diffDays / 7));
 }
 
+function monthKey(value) {
+  return String(value || "").slice(0, 7);
+}
+
+function dateLabel(value) {
+  return value ? String(value).slice(0, 10) : "";
+}
+
+function monthWithinRange(month, startDate, endDate) {
+  const key = monthKey(month);
+  if (!key) {
+    return false;
+  }
+  const start = monthKey(startDate);
+  const end = monthKey(endDate);
+  return (!start || key >= start) && (!end || key <= end);
+}
+
 async function deriveCostGuidance(billRate, targetMargin, engagementType, locationType) {
   const rate = Number(billRate || 0);
   const margin = Number(targetMargin || 0);
@@ -110,6 +128,46 @@ async function normalizeChildRecord(collection, payload, existing = {}) {
     }, existing);
   }
   return payload;
+}
+
+function validateDeploymentPlanRange(plan) {
+  if (!plan?.month) {
+    return "";
+  }
+  const roles = getCollection("sowRoles");
+  const deployments = getCollection("deployments");
+  const deployment = plan.deploymentId ? deployments.find((item) => item.id === plan.deploymentId) : null;
+  const role = roles.find((item) => item.id === (plan.sowRoleId || deployment?.sowRoleId));
+  if (!role) {
+    return "";
+  }
+  const startDate = deployment?.startDate || role.startDate;
+  const endDate = deployment?.endDate || role.endDate;
+  if (monthWithinRange(plan.month, startDate, endDate)) {
+    return "";
+  }
+  const rangeLabel = [dateLabel(startDate), dateLabel(endDate)].filter(Boolean).join(" to ");
+  return `Deployment plan month must be within the role/deployment date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
+}
+
+function validateActualRange(actual) {
+  if (!actual?.month || !actual?.deploymentId) {
+    return "";
+  }
+  const deployments = getCollection("deployments");
+  const roles = getCollection("sowRoles");
+  const deployment = deployments.find((item) => item.id === actual.deploymentId);
+  const role = roles.find((item) => item.id === deployment?.sowRoleId);
+  if (!deployment || !role) {
+    return "";
+  }
+  const startDate = deployment.startDate || role.startDate;
+  const endDate = deployment.endDate || role.endDate;
+  if (monthWithinRange(actual.month, startDate, endDate)) {
+    return "";
+  }
+  const rangeLabel = [dateLabel(startDate), dateLabel(endDate)].filter(Boolean).join(" to ");
+  return `Actual month must be within the deployment date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
 }
 
 function calculateOpportunityRoleRevenue(role) {
@@ -297,6 +355,18 @@ router.post("/:collection", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
   const payload = await normalizeChildRecord(req.params.collection, { ...parsed.data });
+  if (req.params.collection === "deploymentPlans") {
+    const rangeError = validateDeploymentPlanRange(payload);
+    if (rangeError) {
+      return res.status(400).json({ message: rangeError });
+    }
+  }
+  if (req.params.collection === "actuals") {
+    const rangeError = validateActualRange(payload);
+    if (rangeError) {
+      return res.status(400).json({ message: rangeError });
+    }
+  }
   if (!payload.number) {
     const objectMap = {
       opportunityRoles: "OpportunityRole",
@@ -345,6 +415,18 @@ router.patch("/:collection/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
   const normalizedChanges = await normalizeChildRecord(req.params.collection, parsed.data, existing);
+  if (req.params.collection === "deploymentPlans") {
+    const rangeError = validateDeploymentPlanRange({ ...existing, ...normalizedChanges });
+    if (rangeError) {
+      return res.status(400).json({ message: rangeError });
+    }
+  }
+  if (req.params.collection === "actuals") {
+    const rangeError = validateActualRange({ ...existing, ...normalizedChanges });
+    if (rangeError) {
+      return res.status(400).json({ message: rangeError });
+    }
+  }
   const updated = updateRecord(req.params.collection, req.params.id, normalizedChanges);
   addAudit({
     entityName: req.params.collection,

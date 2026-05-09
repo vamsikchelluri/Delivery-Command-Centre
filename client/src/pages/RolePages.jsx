@@ -55,6 +55,10 @@ function deriveCostGuidance(billRate, targetMargin, rules = DEFAULT_OVERHEAD_RUL
   };
 }
 
+function defaultTargetMarginForLocation(locationType) {
+  return locationType === "Onsite" ? 30 : 40;
+}
+
 function formatDate(value) {
   return value ? String(value).slice(0, 10) : "-";
 }
@@ -137,7 +141,7 @@ export function OpportunityRoleFormPage() {
     roleLocation: "Offshore",
     estimatedHours: 0,
     billRate: 0,
-    targetMargin: 0,
+    targetMargin: 40,
     loadedCostGuidance: 0,
     baseCostGuidance: 0,
     allocationPercent: 100,
@@ -173,15 +177,17 @@ export function OpportunityRoleFormPage() {
     }
 
     if (opportunity) {
-      const defaultTargetMargin = opportunity.targetMargin ?? 0;
-      const costing = deriveCostGuidance(0, defaultTargetMargin, overheadRules, "Full-Time", "Offshore");
-      setForm((current) => ({
-        ...current,
-        opportunityId: id,
-        targetMargin: defaultTargetMargin,
-        loadedCostGuidance: costing.loadedCostGuidance,
-        baseCostGuidance: costing.baseCostGuidance
-      }));
+      setForm((current) => {
+        const defaultTargetMargin = defaultTargetMarginForLocation(current.roleLocation);
+        const costing = deriveCostGuidance(0, defaultTargetMargin, overheadRules, current.engagementType || "Full-Time", current.roleLocation || "Offshore");
+        return {
+          ...current,
+          opportunityId: id,
+          targetMargin: defaultTargetMargin,
+          loadedCostGuidance: costing.loadedCostGuidance,
+          baseCostGuidance: costing.baseCostGuidance
+        };
+      });
     }
   }, [role, opportunity, id, overheadRules]);
 
@@ -252,7 +258,7 @@ export function OpportunityRoleFormPage() {
               </select>
             </Field>
             <Field label="Role Location">
-              <select value={form.roleLocation} onChange={(event) => setForm({ ...form, roleLocation: event.target.value })}>
+              <select value={form.roleLocation} onChange={(event) => setForm({ ...form, roleLocation: event.target.value, targetMargin: defaultTargetMarginForLocation(event.target.value) })}>
                 <option value="Offshore">Offshore</option>
                 <option value="Onsite">Onsite</option>
               </select>
@@ -348,7 +354,7 @@ export function SowRoleFormPage() {
     experienceLevel: "Consultant",
     billingType: "Hourly",
     billRate: 0,
-    targetMargin: 0,
+    targetMargin: 40,
     loadedCostGuidance: 0,
     baseCostGuidance: 0,
     startDate: "",
@@ -394,15 +400,17 @@ export function SowRoleFormPage() {
     }
 
     if (sow) {
-      const targetMargin = sow.targetMargin ?? 0;
-      const costing = deriveCostGuidance(0, targetMargin, overheadRules, "Full-Time", "Offshore");
-      setForm((current) => ({
-        ...current,
-        sowId: id,
-        targetMargin,
-        loadedCostGuidance: costing.loadedCostGuidance,
-        baseCostGuidance: costing.baseCostGuidance
-      }));
+      setForm((current) => {
+        const targetMargin = defaultTargetMarginForLocation(current.locationRequirement);
+        const costing = deriveCostGuidance(0, targetMargin, overheadRules, current.engagementType || "Full-Time", current.locationRequirement || "Offshore");
+        return {
+          ...current,
+          sowId: id,
+          targetMargin,
+          loadedCostGuidance: costing.loadedCostGuidance,
+          baseCostGuidance: costing.baseCostGuidance
+        };
+      });
     }
   }, [role, sow, id, overheadRules]);
 
@@ -492,7 +500,7 @@ export function SowRoleFormPage() {
                   </select>
                 </Field>
                 <Field label="Role Location">
-                  <select value={form.locationRequirement} onChange={(event) => setForm({ ...form, locationRequirement: event.target.value })}>
+                  <select value={form.locationRequirement} onChange={(event) => setForm({ ...form, locationRequirement: event.target.value, targetMargin: defaultTargetMarginForLocation(event.target.value) })}>
                     <option value="Offshore">Offshore</option>
                     <option value="Onsite">Onsite</option>
                   </select>
