@@ -1,4 +1,5 @@
 import { sapModuleCatalog } from "./sapModuleCatalog.js";
+import { DEFAULT_OVERHEAD_RULES, OVERHEAD_RULES_CONFIG_KEY } from "../lib/overheadDefaults.js";
 
 const permissionFeatures = [
   { id: "feature_command_center", key: "commandCenter", name: "Command Center", category: "Navigation", actions: ["view"] },
@@ -97,6 +98,7 @@ export const seedData = {
   systemConfigs: [
     { id: "cfg_hours", key: "standardHoursPerYear", value: "1800", description: "Standard annual productive hours" },
     { id: "cfg_overhead", key: "overheadMultiplier", value: "1.2", description: "Employee overhead multiplier" },
+    { id: "cfg_engagement_overhead_rules", key: OVERHEAD_RULES_CONFIG_KEY, value: JSON.stringify(DEFAULT_OVERHEAD_RULES), description: "Engagement type and location type overhead rules" },
     { id: "cfg_full_deployment", key: "fullDeploymentThreshold", value: "90", description: "Allocation threshold for fully deployed" },
     { id: "cfg_rolloff", key: "defaultRollOffWindowDays", value: "30", description: "Default roll-off alert window" }
   ],

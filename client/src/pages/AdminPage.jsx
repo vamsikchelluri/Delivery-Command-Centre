@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, deleteJson, patchJson, postJson } from "../lib/api";
+import { DEFAULT_OVERHEAD_RULES, ENGAGEMENT_TYPES, LOCATION_TYPES, normalizeOverheadRule } from "../lib/overheadRules";
 import { DataTable, Field, Modal, Section } from "../components.jsx";
 
 const tabs = [
@@ -9,6 +10,7 @@ const tabs = [
   { key: "regions", label: "Regions" },
   { key: "locations", label: "Locations" },
   { key: "currencies", label: "Currencies / FX" },
+  { key: "overhead-rules", label: "Overhead Rules" },
   { key: "systemConfigs", label: "System Config" },
   { key: "numberRanges", label: "Number Ranges" },
   { key: "appRoles", label: "Roles" },
@@ -43,6 +45,7 @@ export function AdminPage() {
     dateTo: ""
   });
   const isRolePermissions = active === "role-permissions";
+  const isOverheadRules = active === "overhead-rules";
   const { data = [], refetch, isLoading } = useQuery({
     queryKey: ["admin", active],
     queryFn: () => apiFetch(`/admin/${active}`),
@@ -139,6 +142,8 @@ export function AdminPage() {
         ) : null}
         {isRolePermissions ? (
           <RolePermissionsAdmin />
+        ) : isOverheadRules ? (
+          <OverheadRulesAdmin rows={data} onSaved={refetch} />
         ) : isLoading ? <div className="loading">Loading...</div> : isSapModules ? (
           <SapModulesAdmin rows={filteredRows} onSaved={refetch} />
         ) : (
@@ -447,6 +452,107 @@ function SapSubModuleModal({ record, onClose, onSubmit }) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+function OverheadRulesAdmin({ rows, onSaved }) {
+  const [rules, setRules] = useState([]);
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const source = rows?.length ? rows : DEFAULT_OVERHEAD_RULES;
+    setRules(source.map(normalizeOverheadRule));
+  }, [rows]);
+
+  function updateRule(id, key, value) {
+    setRules((current) => current.map((rule) => rule.id === id ? { ...rule, [key]: value } : rule));
+    setMessage("");
+  }
+
+  function addRule() {
+    setRules((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        engagementType: "Full-Time",
+        locationType: "Onsite",
+        overheadPercent: 0,
+        hourlyAddOn: 0,
+        active: true
+      }
+    ]);
+    setMessage("");
+  }
+
+  function removeRule(id) {
+    setRules((current) => current.filter((rule) => rule.id !== id));
+    setMessage("");
+  }
+
+  async function save() {
+    const payload = {
+      rules: rules.map((rule) => ({
+        ...rule,
+        overheadPercent: Number(rule.overheadPercent || 0),
+        hourlyAddOn: Number(rule.hourlyAddOn || 0),
+        active: rule.active !== false
+      }))
+    };
+    await patchJson("/admin/overhead-rules", payload);
+    setMessage("Overhead rules saved. New costing guidance will use these values.");
+    await onSaved();
+  }
+
+  return (
+    <div className="overhead-rules-admin">
+      <div className="role-permissions-toolbar">
+        <p className="muted">Maintain percent overhead and absolute hourly add-on by engagement type and location type.</p>
+        <div className="row-actions">
+          <button className="secondary-button" type="button" onClick={addRule}>Add Rule</button>
+          <button type="button" onClick={save}>Save Rules</button>
+        </div>
+      </div>
+      {message ? <div className="success-banner">{message}</div> : null}
+      <div className="permission-matrix overhead-rules-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Engagement Type</th>
+              <th>Location Type</th>
+              <th>Overhead %</th>
+              <th>Hourly Add-On ($)</th>
+              <th>Active</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((rule) => (
+              <tr key={rule.id}>
+                <td>
+                  <select value={rule.engagementType} onChange={(event) => updateRule(rule.id, "engagementType", event.target.value)}>
+                    {[...ENGAGEMENT_TYPES, "Default"].map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select value={rule.locationType} onChange={(event) => updateRule(rule.id, "locationType", event.target.value)}>
+                    {[...LOCATION_TYPES, "Default"].map((option) => <option key={option} value={option}>{option}</option>)}
+                  </select>
+                </td>
+                <td><input type="number" min="0" step="any" value={rule.overheadPercent} onChange={(event) => updateRule(rule.id, "overheadPercent", event.target.value)} /></td>
+                <td><input type="number" min="0" step="any" value={rule.hourlyAddOn} onChange={(event) => updateRule(rule.id, "hourlyAddOn", event.target.value)} /></td>
+                <td>
+                  <select value={String(rule.active)} onChange={(event) => updateRule(rule.id, "active", event.target.value === "true")}>
+                    <option value="true">True</option>
+                    <option value="false">False</option>
+                  </select>
+                </td>
+                <td><button className="tiny-button danger" type="button" onClick={() => removeRule(rule.id)}>Delete</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 

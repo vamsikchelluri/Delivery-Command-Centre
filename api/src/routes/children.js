@@ -2,9 +2,9 @@ import { Router } from "express";
 import { z } from "zod";
 import { addAudit, deleteRecord, getCollection, nextDocumentNumber, updateRecord, upsertRecord } from "../data/store.js";
 import { weightedValue } from "../lib/dashboard.js";
+import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
 
 const router = Router();
-const OVERHEAD_MULTIPLIER = 1.2;
 
 function toIsoDate(value) {
   return value ? new Date(value).toISOString() : value;
@@ -37,7 +37,7 @@ function weekSpanInclusive(startDate, endDate) {
   return Math.max(1, Math.ceil(diffDays / 7));
 }
 
-function deriveCostGuidance(billRate, targetMargin) {
+async function deriveCostGuidance(billRate, targetMargin, engagementType, locationType) {
   const rate = Number(billRate || 0);
   const margin = Number(targetMargin || 0);
   if (!rate) {
@@ -50,7 +50,8 @@ function deriveCostGuidance(billRate, targetMargin) {
   }
 
   const loadedCostGuidance = Number((rate * (1 - margin / 100)).toFixed(2));
-  const baseCostGuidance = Number((loadedCostGuidance / OVERHEAD_MULTIPLIER).toFixed(2));
+  const rules = await getEngagementOverheadRules();
+  const baseCostGuidance = removeOverheadFromLoadedCost(loadedCostGuidance, rules, engagementType, locationType);
   return {
     targetMargin: margin,
     loadedCostGuidance,
@@ -75,16 +76,24 @@ function normalizeRoleDates(payload) {
   return next;
 }
 
-function normalizeCostFields(payload, existing = {}) {
+async function normalizeCostFields(payload, existing = {}) {
   const next = { ...payload };
-  const shouldRecalculate = "billRate" in next || "targetMargin" in next || !existing.id;
+  const shouldRecalculate =
+    "billRate" in next ||
+    "targetMargin" in next ||
+    "engagementType" in next ||
+    "roleLocation" in next ||
+    "locationRequirement" in next ||
+    !existing.id;
   if (!shouldRecalculate) {
     return next;
   }
 
   const billRate = next.billRate ?? existing.billRate ?? 0;
   const targetMargin = next.targetMargin ?? existing.targetMargin ?? 0;
-  const costing = deriveCostGuidance(billRate, targetMargin);
+  const engagementType = next.engagementType ?? existing.engagementType ?? "Full-Time";
+  const locationType = next.roleLocation ?? next.locationRequirement ?? existing.roleLocation ?? existing.locationRequirement ?? "Offshore";
+  const costing = await deriveCostGuidance(billRate, targetMargin, engagementType, locationType);
   next.targetMargin = costing.targetMargin;
   next.loadedCostGuidance = costing.loadedCostGuidance;
   next.baseCostGuidance = costing.baseCostGuidance;
@@ -92,7 +101,7 @@ function normalizeCostFields(payload, existing = {}) {
   return next;
 }
 
-function normalizeChildRecord(collection, payload, existing = {}) {
+async function normalizeChildRecord(collection, payload, existing = {}) {
   if (collection === "opportunityRoles" || collection === "sowRoles") {
     return normalizeCostFields({
       ...normalizeRoleDates(payload),
@@ -277,7 +286,7 @@ router.get("/:collection/by-parent/:parentId", (req, res) => {
   return res.json(getCollection(req.params.collection).filter((item) => item[setup.parentKey] === req.params.parentId));
 });
 
-router.post("/:collection", (req, res) => {
+router.post("/:collection", async (req, res) => {
   const setup = collectionConfig(req.params.collection);
   if (!setup) {
     return res.status(404).json({ message: "Unknown child collection" });
@@ -286,7 +295,7 @@ router.post("/:collection", (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
-  const payload = normalizeChildRecord(req.params.collection, { ...parsed.data });
+  const payload = await normalizeChildRecord(req.params.collection, { ...parsed.data });
   if (!payload.number) {
     const objectMap = {
       opportunityRoles: "OpportunityRole",
@@ -320,7 +329,7 @@ router.post("/:collection", (req, res) => {
   return res.status(201).json(record);
 });
 
-router.patch("/:collection/:id", (req, res) => {
+router.patch("/:collection/:id", async (req, res) => {
   const setup = collectionConfig(req.params.collection);
   if (!setup) {
     return res.status(404).json({ message: "Unknown child collection" });
@@ -333,7 +342,7 @@ router.patch("/:collection/:id", (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
-  const normalizedChanges = normalizeChildRecord(req.params.collection, parsed.data, existing);
+  const normalizedChanges = await normalizeChildRecord(req.params.collection, parsed.data, existing);
   const updated = updateRecord(req.params.collection, req.params.id, normalizedChanges);
   addAudit({
     entityName: req.params.collection,

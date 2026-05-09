@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, patchJson, postJson } from "../lib/api";
 import { canEditResourceCost, canViewResourceCost, currentUser } from "../lib/permissions";
+import { DEFAULT_OVERHEAD_RULES, applyOverheadToBaseCost } from "../lib/overheadRules";
 import { DataTable, Field, Section } from "../components.jsx";
 
 export function SaveBar({ backTo, label }) {
@@ -137,6 +138,7 @@ export function ResourceFormPage() {
   const { data: users = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: () => apiFetch("/admin/users") });
   const { data: currencies = [] } = useQuery({ queryKey: ["admin", "currencies"], queryFn: () => apiFetch("/admin/currencies") });
   const { data: locations = [] } = useQuery({ queryKey: ["admin", "locations"], queryFn: () => apiFetch("/admin/locations") });
+  const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const record = resources.find((item) => item.id === id);
   const [activeTab, setActiveTab] = useState("Resource Profile");
   const [saveError, setSaveError] = useState("");
@@ -206,9 +208,9 @@ export function ResourceFormPage() {
   const compensationTypeOptions = ["", ...allowedCompensationTypes(form.locationType, form.employmentType)];
   const costFormulaHint =
     form.costCalculationMode === "Offshore Employee"
-      ? "(CTC / FX / hours) * overhead"
+      ? "(CTC / FX / hours) + configured overhead"
       : form.costCalculationMode === "Onsite Employee"
-        ? "(Salary / hours) * overhead"
+        ? "(Salary / hours) + configured overhead"
         : form.costCalculationMode === "Manual estimated cost rate"
           ? "Direct hourly cost rate"
           : "Rate converted to USD if needed";
@@ -253,24 +255,27 @@ export function ResourceFormPage() {
     const compensation = Number(next.compensationValue || 0);
     const fx = Number(next.fxRateUsed || 1);
     const hours = 1800;
-    const overhead = 1.2;
     if (!next.compensationInputType) {
       next.costRate = compensation ? Number(compensation.toFixed(2)) : Number(next.costRate || 0);
     } else if (next.costCalculationMode === "Offshore Employee") {
-      next.costRate = compensation ? Number((((compensation / fx) / hours) * overhead).toFixed(2)) : 0;
+      const baseRate = compensation ? Number(((compensation / fx) / hours).toFixed(2)) : 0;
+      next.costRate = applyOverheadToBaseCost(baseRate, overheadRules, next.employmentType, next.locationType);
     } else if (next.costCalculationMode === "Onsite Employee") {
-      next.costRate = compensation ? Number(((compensation / hours) * overhead).toFixed(2)) : 0;
+      const baseRate = compensation ? Number((compensation / hours).toFixed(2)) : 0;
+      next.costRate = applyOverheadToBaseCost(baseRate, overheadRules, next.employmentType, next.locationType);
     } else if (next.compensationInputType === "Monthly Rate") {
       const annualized = compensation * 12;
-      next.costRate = annualized ? Number((((annualized / fx) / hours) * overhead).toFixed(2)) : 0;
+      const baseRate = annualized ? Number(((annualized / fx) / hours).toFixed(2)) : 0;
+      next.costRate = applyOverheadToBaseCost(baseRate, overheadRules, next.employmentType, next.locationType);
     } else {
-      next.costRate = compensation ? Number((next.compensationCurrency === "INR" ? compensation / fx : compensation).toFixed(2)) : 0;
+      const baseRate = compensation ? Number((next.compensationCurrency === "INR" ? compensation / fx : compensation).toFixed(2)) : 0;
+      next.costRate = applyOverheadToBaseCost(baseRate, overheadRules, next.employmentType, next.locationType);
     }
 
     if (JSON.stringify(next) !== JSON.stringify(form)) {
       setForm(next);
     }
-  }, [form.locationType, form.employmentType, form.compensationInputType, form.compensationValue, form.compensationCurrency, form.paymentCurrency]);
+  }, [form.locationType, form.employmentType, form.compensationInputType, form.compensationValue, form.compensationCurrency, form.paymentCurrency, overheadRules]);
 
   function updateLocation(locationName) {
     const location = locationOptions.find((item) => item.name === locationName);

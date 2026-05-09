@@ -2,20 +2,21 @@ import { Router } from "express";
 import { z } from "zod";
 import { computeGrossMarginPercent } from "../lib/dashboard.js";
 import { generateNumber, hydrateCounter } from "../lib/numbering.js";
+import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
 import { addAudit, addRecord, getCollection, nextDocumentNumber, updateRecord } from "../data/store.js";
 
 const router = Router();
-const OVERHEAD_MULTIPLIER = 1.2;
 const sowStatuses = ["DRAFT", "ACTIVE", "INACTIVE", "ON_HOLD", "COMPLETED", "TERMINATED"];
 
-function deriveRoleCosting(billRate, targetMargin) {
+async function deriveRoleCosting(billRate, targetMargin, engagementType, locationType) {
   const rate = Number(billRate || 0);
   const margin = Number(targetMargin || 0);
   const loadedCostGuidance = Number((rate * (1 - margin / 100)).toFixed(2));
+  const rules = await getEngagementOverheadRules();
   return {
     targetMargin: margin,
     loadedCostGuidance,
-    baseCostGuidance: Number((loadedCostGuidance / OVERHEAD_MULTIPLIER).toFixed(2))
+    baseCostGuidance: removeOverheadFromLoadedCost(loadedCostGuidance, rules, engagementType, locationType)
   };
 }
 
@@ -155,7 +156,12 @@ router.post("/", async (req, res) => {
   if (sourceOpportunity) {
     const sourceRoles = getCollection("opportunityRoles").filter((role) => role.opportunityId === sourceOpportunity.id);
     for (const sourceRole of sourceRoles) {
-      const copiedCosting = deriveRoleCosting(sourceRole.billRate, sourceRole.targetMargin ?? sourceOpportunity.targetMargin ?? 0);
+      const copiedCosting = await deriveRoleCosting(
+        sourceRole.billRate,
+        sourceRole.targetMargin ?? sourceOpportunity.targetMargin ?? 0,
+        sourceRole.engagementType || "Full-Time",
+        sourceRole.roleLocation || "Offshore"
+      );
       const copiedRole = {
         id: crypto.randomUUID(),
         number: nextDocumentNumber("SOWRole"),

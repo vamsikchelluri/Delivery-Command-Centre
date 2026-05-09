@@ -30,9 +30,9 @@ export function ResourceDetailPage() {
   const currentDeliveryStatus = resource.currentDeliveryStatusLabel || resource.currentDeliveryStatus || "Available";
   const costFormulaHint =
     resource.costCalculationMode === "Offshore Employee"
-      ? "(CTC / FX / hours) * overhead"
+      ? "(CTC / FX / hours) + configured overhead"
       : resource.costCalculationMode === "Onsite Employee"
-        ? "(Salary / hours) * overhead"
+        ? "(Salary / hours) + configured overhead"
         : resource.costCalculationMode === "Manual estimated cost rate"
           ? "Direct hourly cost rate"
           : "Rate converted to USD if needed";

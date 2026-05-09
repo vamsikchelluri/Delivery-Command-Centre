@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { addAudit, addRecord, deleteRecord, getCollection, nextDocumentNumber, updateRecord, upsertRecord } from "../data/store.js";
 import { hashPassword } from "../lib/auth.js";
+import { DEFAULT_OVERHEAD_RULES, OVERHEAD_RULES_CONFIG_KEY, normalizeOverheadRule } from "../lib/overheadRules.js";
 import { prisma } from "../prisma.js";
 
 const router = Router();
@@ -209,6 +210,75 @@ const collections = {
     })
   }
 };
+
+function parseOverheadRules(value) {
+  if (!value) {
+    return DEFAULT_OVERHEAD_RULES;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map(normalizeOverheadRule) : DEFAULT_OVERHEAD_RULES;
+  } catch (_error) {
+    return DEFAULT_OVERHEAD_RULES;
+  }
+}
+
+router.get("/overhead-rules", asyncRoute(async (_req, res) => {
+  const config = await prisma.systemConfig.upsert({
+    where: { key: OVERHEAD_RULES_CONFIG_KEY },
+    update: {},
+    create: {
+      id: "cfg_engagement_overhead_rules",
+      key: OVERHEAD_RULES_CONFIG_KEY,
+      value: JSON.stringify(DEFAULT_OVERHEAD_RULES),
+      description: "Engagement type and location type overhead rules"
+    }
+  });
+  return res.json(parseOverheadRules(config.value));
+}));
+
+router.patch("/overhead-rules", asyncRoute(async (req, res) => {
+  const schema = z.object({
+    rules: z.array(z.object({
+      id: z.string().optional(),
+      engagementType: z.string().min(2),
+      locationType: z.string().min(2),
+      overheadPercent: z.coerce.number().min(0).max(500).default(0),
+      hourlyAddOn: z.coerce.number().min(0).max(10000).default(0),
+      active: z.boolean().default(true)
+    }))
+  });
+  const parsed = schema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: "Invalid overhead rule payload", issues: parsed.error.issues });
+  }
+
+  const rules = parsed.data.rules.map(normalizeOverheadRule);
+  const existing = await prisma.systemConfig.findUnique({ where: { key: OVERHEAD_RULES_CONFIG_KEY } });
+  const record = await prisma.systemConfig.upsert({
+    where: { key: OVERHEAD_RULES_CONFIG_KEY },
+    update: {
+      value: JSON.stringify(rules),
+      description: "Engagement type and location type overhead rules"
+    },
+    create: {
+      id: "cfg_engagement_overhead_rules",
+      key: OVERHEAD_RULES_CONFIG_KEY,
+      value: JSON.stringify(rules),
+      description: "Engagement type and location type overhead rules"
+    }
+  });
+  await addAuditToPostgres({
+    entityName: "overheadRules",
+    recordId: record.id,
+    actionType: existing ? "UPDATE" : "CREATE",
+    actor: req.user?.name || "Unknown",
+    oldValue: existing ? parseOverheadRules(existing.value) : undefined,
+    newValue: rules,
+    sourceScreen: "Admin"
+  });
+  return res.json(rules);
+}));
 
 router.get("/role-permissions/matrix", asyncRoute(async (_req, res) => {
   const [roles, features, permissions] = await Promise.all([

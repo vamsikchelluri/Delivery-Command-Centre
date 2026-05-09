@@ -12,6 +12,7 @@
     "db:seed": "node scripts/importJsonToPostgres.js --reset --master-data-only",
     "db:seed-master": "node scripts/importJsonToPostgres.js --reset --master-data-only",
     "db:upsert-sap-modules": "node scripts/upsertSapModules.js",
+    "db:upsert-overhead-rules": "node scripts/upsertOverheadRules.js",
     "db:import-json": "node scripts/importJsonToPostgres.js --master-data-only",
     "db:import-full-json:dev": "node scripts/importJsonToPostgres.js"
   },

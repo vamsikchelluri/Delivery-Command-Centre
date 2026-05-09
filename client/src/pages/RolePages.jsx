@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch, patchJson, postJson } from "../lib/api";
+import { DEFAULT_OVERHEAD_RULES, removeOverheadFromLoadedCost } from "../lib/overheadRules";
 import { DataTable, Field, Section } from "../components.jsx";
 import { PageShell, SaveBar } from "./FormPages.jsx";
-
-const OVERHEAD_MULTIPLIER = 1.2;
 
 function activeSkills(skills) {
   return skills.filter((skill) => skill.active !== false);
@@ -44,11 +43,11 @@ function weekSpanInclusive(startDate, endDate) {
   return Math.max(1, Math.ceil(diffDays / 7));
 }
 
-function deriveCostGuidance(billRate, targetMargin) {
+function deriveCostGuidance(billRate, targetMargin, rules = DEFAULT_OVERHEAD_RULES, engagementType = "Full-Time", locationType = "Offshore") {
   const rate = Number(billRate || 0);
   const margin = Number(targetMargin || 0);
   const loadedCostGuidance = Number((rate * (1 - margin / 100)).toFixed(2));
-  const baseCostGuidance = Number((loadedCostGuidance / OVERHEAD_MULTIPLIER).toFixed(2));
+  const baseCostGuidance = removeOverheadFromLoadedCost(loadedCostGuidance, rules, engagementType, locationType);
   return {
     targetMargin: margin,
     loadedCostGuidance,
@@ -122,6 +121,7 @@ export function OpportunityRoleFormPage() {
   const { data: opportunity, isLoading: isOpportunityLoading, error: opportunityError } = useQuery({ queryKey: ["opportunity", id], queryFn: () => apiFetch(`/opportunities/${id}`) });
   const { data: skills = [], error: skillsError } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: experienceLevels = [], error: experienceLevelsError } = useQuery({ queryKey: ["admin", "experienceLevels"], queryFn: () => apiFetch("/admin/experienceLevels") });
+  const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const role = opportunity?.roles?.find((item) => item.id === roleId);
 
   const [form, setForm] = useState({
@@ -148,7 +148,7 @@ export function OpportunityRoleFormPage() {
   useEffect(() => {
     if (role) {
       const targetMargin = role.targetMargin ?? opportunity?.targetMargin ?? 0;
-      const costing = deriveCostGuidance(role.billRate, targetMargin);
+      const costing = deriveCostGuidance(role.billRate, targetMargin, overheadRules, role.engagementType || "Full-Time", role.roleLocation || "Offshore");
       setForm({
         opportunityId: id,
         title: role.title || "",
@@ -174,7 +174,7 @@ export function OpportunityRoleFormPage() {
 
     if (opportunity) {
       const defaultTargetMargin = opportunity.targetMargin ?? 0;
-      const costing = deriveCostGuidance(0, defaultTargetMargin);
+      const costing = deriveCostGuidance(0, defaultTargetMargin, overheadRules, "Full-Time", "Offshore");
       setForm((current) => ({
         ...current,
         opportunityId: id,
@@ -183,11 +183,11 @@ export function OpportunityRoleFormPage() {
         baseCostGuidance: costing.baseCostGuidance
       }));
     }
-  }, [role, opportunity, id]);
+  }, [role, opportunity, id, overheadRules]);
 
   useEffect(() => {
     setForm((current) => {
-      const costing = deriveCostGuidance(current.billRate, current.targetMargin);
+      const costing = deriveCostGuidance(current.billRate, current.targetMargin, overheadRules, current.engagementType, current.roleLocation);
       if (
         costing.loadedCostGuidance === current.loadedCostGuidance &&
         costing.baseCostGuidance === current.baseCostGuidance
@@ -200,7 +200,7 @@ export function OpportunityRoleFormPage() {
         baseCostGuidance: costing.baseCostGuidance
       };
     });
-  }, [form.billRate, form.targetMargin]);
+  }, [form.billRate, form.targetMargin, form.engagementType, form.roleLocation, overheadRules]);
 
   const skill = activeSkills(skills).find((item) => item.name === form.skill);
 
@@ -261,6 +261,8 @@ export function OpportunityRoleFormPage() {
               <select value={form.engagementType} onChange={(event) => setForm({ ...form, engagementType: event.target.value })}>
                 <option value="Full-Time">Full-Time</option>
                 <option value="Part-Time">Part-Time</option>
+                <option value="Contractor">Contractor</option>
+                <option value="C2C">C2C</option>
               </select>
             </Field>
             <Field label="Experience Level">
@@ -334,6 +336,7 @@ export function SowRoleFormPage() {
   const { data: skills = [], error: skillsError } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: experienceLevels = [], error: experienceLevelsError } = useQuery({ queryKey: ["admin", "experienceLevels"], queryFn: () => apiFetch("/admin/experienceLevels") });
   const { data: resources = [], error: resourcesError } = useQuery({ queryKey: ["resources"], queryFn: () => apiFetch("/resources") });
+  const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const role = sow?.roles?.find((item) => item.id === roleId);
   const [assignedResourceId, setAssignedResourceId] = useState("");
   const [form, setForm] = useState({
@@ -363,7 +366,7 @@ export function SowRoleFormPage() {
   useEffect(() => {
     if (role) {
       const targetMargin = role.targetMargin ?? sow?.targetMargin ?? 0;
-      const costing = deriveCostGuidance(role.billRate, targetMargin);
+      const costing = deriveCostGuidance(role.billRate, targetMargin, overheadRules, role.engagementType || "Full-Time", role.locationRequirement || "Offshore");
       setForm({
         sowId: id,
         title: role.title || "",
@@ -392,7 +395,7 @@ export function SowRoleFormPage() {
 
     if (sow) {
       const targetMargin = sow.targetMargin ?? 0;
-      const costing = deriveCostGuidance(0, targetMargin);
+      const costing = deriveCostGuidance(0, targetMargin, overheadRules, "Full-Time", "Offshore");
       setForm((current) => ({
         ...current,
         sowId: id,
@@ -401,11 +404,11 @@ export function SowRoleFormPage() {
         baseCostGuidance: costing.baseCostGuidance
       }));
     }
-  }, [role, sow, id]);
+  }, [role, sow, id, overheadRules]);
 
   useEffect(() => {
     setForm((current) => {
-      const costing = deriveCostGuidance(current.billRate, current.targetMargin);
+      const costing = deriveCostGuidance(current.billRate, current.targetMargin, overheadRules, current.engagementType, current.locationRequirement);
       if (
         costing.loadedCostGuidance === current.loadedCostGuidance &&
         costing.baseCostGuidance === current.baseCostGuidance
@@ -418,7 +421,7 @@ export function SowRoleFormPage() {
         baseCostGuidance: costing.baseCostGuidance
       };
     });
-  }, [form.billRate, form.targetMargin]);
+  }, [form.billRate, form.targetMargin, form.engagementType, form.locationRequirement, overheadRules]);
 
   const skill = activeSkills(skills).find((item) => item.name === form.skill);
   const candidateResources = useMemo(() => matchCandidates(resources, form), [resources, form]);
@@ -497,6 +500,8 @@ export function SowRoleFormPage() {
                   <select value={form.engagementType} onChange={(event) => setForm({ ...form, engagementType: event.target.value })}>
                     <option value="Full-Time">Full-Time</option>
                     <option value="Part-Time">Part-Time</option>
+                    <option value="Contractor">Contractor</option>
+                    <option value="C2C">C2C</option>
                   </select>
                 </Field>
                 <Field label="Experience Level">
