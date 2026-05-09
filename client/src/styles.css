@@ -2225,12 +2225,25 @@ textarea {
   gap: 0.35rem;
 }
 
+.delivery-role-inline {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-height: 44px;
+}
+
 .check-row {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   font-weight: 700;
   color: var(--text);
+}
+
+.readonly-input {
+  color: var(--text-muted);
+  background: var(--surface-soft);
+  cursor: not-allowed;
 }
 
 .check-list {

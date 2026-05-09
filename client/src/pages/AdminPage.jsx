@@ -794,7 +794,75 @@ function AdminForm({ collection, record, onClose, onSaved }) {
     <Modal title={`${record.id ? "Edit" : "Add"} ${collectionLabel(collection)}`} onClose={onClose}>
       <form className="form-grid modal-form two-up" onSubmit={handleSubmit}>
         {error ? <div className="error-banner">{error}</div> : null}
-        {Object.keys(form).map((key) => (
+        {collection === "users" ? (
+          <>
+            <Field label="First Name">
+              <input value={form.firstName} onChange={(event) => update("firstName", event.target.value)} required />
+            </Field>
+            <Field label="Last Name">
+              <input value={form.lastName} onChange={(event) => update("lastName", event.target.value)} required />
+            </Field>
+            <Field label="Email">
+              <input type="email" value={form.email} onChange={(event) => update("email", event.target.value)} required />
+            </Field>
+            <Field label="Temporary Password">
+              <input
+                type="password"
+                minLength={record.id ? undefined : 8}
+                placeholder={record.id ? "Leave blank to keep current password" : "Minimum 8 characters"}
+                required={!record.id}
+                value={form.temporaryPassword}
+                onChange={(event) => update("temporaryPassword", event.target.value)}
+              />
+            </Field>
+            <Field label="Authorization Role">
+              <select value={form.role} onChange={(event) => update("role", event.target.value)} required>
+                <option value="">Select role</option>
+                {activeRoleOptions.map((role) => (
+                  <option key={role.id || role.name} value={role.name}>{role.name}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Delivery Role">
+              <div className="delivery-role-inline">
+                {["PM", "DM"].map((deliveryRole) => (
+                  <label key={deliveryRole} className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={(form.deliveryRoles || []).includes(deliveryRole)}
+                      onChange={(event) => {
+                        const current = form.deliveryRoles || [];
+                        update(
+                          "deliveryRoles",
+                          event.target.checked
+                            ? [...current, deliveryRole]
+                            : current.filter((item) => item !== deliveryRole)
+                        );
+                      }}
+                    />
+                    <span>{deliveryRole}</span>
+                  </label>
+                ))}
+              </div>
+            </Field>
+            <Field label="Cost View">
+              <select value={form.canViewCost} onChange={(event) => update("canViewCost", event.target.value)}>
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </Field>
+            <Field label="Margin View">
+              <select value={form.canViewMargin} onChange={(event) => update("canViewMargin", event.target.value)}>
+                <option value="true">True</option>
+                <option value="false">False</option>
+              </select>
+            </Field>
+            <Field label="User Number">
+              <input value={form.number || "Auto-generated on save"} readOnly className="readonly-input" />
+            </Field>
+            <span aria-hidden="true"></span>
+          </>
+        ) : Object.keys(form).map((key) => (
           <Field key={key} label={fieldLabel(key)}>
             {isBooleanField(key) ? (
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
@@ -907,6 +975,20 @@ function normalizeForm(collection, record) {
   if (collection === "systemConfigs") return { key: record.key || "", value: record.value || "", description: record.description || "" };
   if (collection === "numberRanges") return { objectType: record.objectType || "", prefix: record.prefix || "", sequenceLength: String(record.sequenceLength ?? 6), nextNumber: String(record.nextNumber ?? 1), includeYear: String(record.includeYear ?? true), active: String(record.active ?? true) };
   if (collection === "appRoles") return { name: record.name || "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false), active: String(record.active ?? true) };
+  if (collection === "users") {
+    const nameParts = String(record.name || "").trim().split(/\s+/).filter(Boolean);
+    return {
+      number: record.number || "",
+      firstName: nameParts[0] || "",
+      lastName: nameParts.slice(1).join(" ") || "",
+      email: record.email || "",
+      role: record.role || "",
+      deliveryRoles: record.deliveryRoles || [],
+      temporaryPassword: "",
+      canViewCost: String(record.canViewCost ?? false),
+      canViewMargin: String(record.canViewMargin ?? false)
+    };
+  }
   return { number: record.number || "", name: record.name || "", email: record.email || "", role: record.role || "", deliveryRoles: record.deliveryRoles || [], temporaryPassword: "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false) };
 }
 
@@ -917,6 +999,21 @@ function denormalizeForm(collection, form) {
   if (collection === "locations") return { ...form, active: form.active === "true" };
   if (collection === "numberRanges") return { ...form, sequenceLength: Number(form.sequenceLength), nextNumber: Number(form.nextNumber), includeYear: form.includeYear === "true", active: form.active === "true" };
   if (collection === "appRoles") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true", active: form.active === "true" };
-  if (collection === "users") return { ...form, deliveryRoles: form.deliveryRoles || [], canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true" };
+  if (collection === "users") {
+    const name = `${form.firstName || ""} ${form.lastName || ""}`.trim();
+    const payload = {
+      number: form.number || undefined,
+      name,
+      email: form.email,
+      role: form.role,
+      deliveryRoles: form.deliveryRoles || [],
+      temporaryPassword: form.temporaryPassword,
+      canViewCost: form.canViewCost === "true",
+      canViewMargin: form.canViewMargin === "true"
+    };
+    if (!payload.number) delete payload.number;
+    if (!payload.temporaryPassword) delete payload.temporaryPassword;
+    return payload;
+  }
   return form;
 }
