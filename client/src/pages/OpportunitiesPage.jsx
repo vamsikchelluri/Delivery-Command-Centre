@@ -11,24 +11,30 @@ export function OpportunitiesPage() {
   const canCreate = can(user, "opportunities", "create");
   const canEdit = can(user, "opportunities", "edit");
   const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState("All Clients");
   const [stageFilter, setStageFilter] = useState("All Stages");
   const [sourceFilter, setSourceFilter] = useState("All Sources");
+  const [amFilter, setAmFilter] = useState("All AMs");
   const [dmFilter, setDmFilter] = useState("All DMs");
   const { data = [], isLoading } = useQuery({
     queryKey: ["opportunities"],
     queryFn: () => apiFetch("/opportunities")
   });
 
+  const clientOptions = ["All Clients", ...new Set(data.map((item) => item.client?.name || "Unassigned"))];
   const stageOptions = ["All Stages", ...new Set(data.map((item) => item.stage || "Unknown"))];
   const sourceOptions = ["All Sources", ...new Set(data.map((item) => item.source || "Unknown"))];
+  const amOptions = ["All AMs", ...new Set(data.map((item) => item.accountManagerName || "Unassigned"))];
   const dmOptions = ["All DMs", ...new Set(data.map((item) => item.deliveryManagerName || "Unknown"))];
   const filtered = data.filter((row) => {
     const text = `${row.name} ${row.client?.name || ""} ${row.source || ""}`.toLowerCase();
     const matchesSearch = !search || text.includes(search.toLowerCase());
+    const matchesClient = clientFilter === "All Clients" || (row.client?.name || "Unassigned") === clientFilter;
     const matchesStage = stageFilter === "All Stages" || (row.stage || "Unknown") === stageFilter;
     const matchesSource = sourceFilter === "All Sources" || (row.source || "Unknown") === sourceFilter;
+    const matchesAm = amFilter === "All AMs" || (row.accountManagerName || "Unassigned") === amFilter;
     const matchesDm = dmFilter === "All DMs" || (row.deliveryManagerName || "Unknown") === dmFilter;
-    return matchesSearch && matchesStage && matchesSource && matchesDm;
+    return matchesSearch && matchesClient && matchesStage && matchesSource && matchesAm && matchesDm;
   });
   const totalOpen = filtered.filter((item) => !["WON", "LOST"].includes(item.stage)).length;
   const nonLost = filtered.filter((item) => item.stage !== "LOST");
@@ -43,23 +49,23 @@ export function OpportunitiesPage() {
         title="Pipeline Management"
         subtitle="Track client opportunities, engagement ownership, target margin, and weighted pipeline."
         actions={
-          <div className="register-header-actions">
-            <div className="register-filter-bar">
-              <input placeholder="Search client, project..." value={search} onChange={(event) => setSearch(event.target.value)} />
-              <select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}>
-                {stageOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>
-                {sourceOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={dmFilter} onChange={(event) => setDmFilter(event.target.value)}>
-                {dmOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </div>
-            {canCreate ? <button onClick={() => navigate("/opportunities/new")}>Add Opportunity</button> : null}
-          </div>
+          canCreate ? <button onClick={() => navigate("/opportunities/new")}>Add Opportunity</button> : null
         }
       />
+      <div className="financial-filter-panel resource-filter-panel">
+        <div>
+          <strong>Filters apply to opportunity register</strong>
+          <small>Client, AM, and DM narrow the pipeline list and KPI totals below.</small>
+        </div>
+        <div className="financial-filter-grid resource-filter-grid refined">
+          <label><span>Search</span><input placeholder="Client, opportunity..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <label><span>Client</span><select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>{clientOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Stage</span><select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}>{stageOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Source</span><select value={sourceFilter} onChange={(event) => setSourceFilter(event.target.value)}>{sourceOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Account Manager</span><select value={amFilter} onChange={(event) => setAmFilter(event.target.value)}>{amOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Delivery Manager</span><select value={dmFilter} onChange={(event) => setDmFilter(event.target.value)}>{dmOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+        </div>
+      </div>
       <div className="stats-grid register-kpi-row">
         <StatCard label="Open Opportunities" value={totalOpen} />
         <StatCard label="Weighted Pipeline" value={`$${weightedPipeline.toLocaleString()}`} />

@@ -11,24 +11,30 @@ export function SowsPage() {
   const canCreate = can(user, "sows", "create");
   const canEdit = can(user, "sows", "edit");
   const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState("All Clients");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [billingFilter, setBillingFilter] = useState("All Billing");
+  const [pmFilter, setPmFilter] = useState("All PMs");
   const [dmFilter, setDmFilter] = useState("All DMs");
   const { data = [], isLoading } = useQuery({
     queryKey: ["sows"],
     queryFn: () => apiFetch("/sows")
   });
 
+  const clientOptions = ["All Clients", ...new Set(data.map((item) => item.account?.name || "Unassigned"))];
   const statusOptions = ["All Status", ...new Set(data.map((item) => item.status || "Unknown"))];
   const billingOptions = ["All Billing", ...new Set(data.map((item) => item.billingModel || "Unknown"))];
+  const pmOptions = ["All PMs", ...new Set(data.map((item) => item.projectManagerName || "Unassigned"))];
   const dmOptions = ["All DMs", ...new Set(data.map((item) => item.deliveryManagerName || "Unknown"))];
   const filtered = data.filter((row) => {
     const text = `${row.name} ${row.account?.name || ""} ${row.billingModel || ""}`.toLowerCase();
     const matchesSearch = !search || text.includes(search.toLowerCase());
+    const matchesClient = clientFilter === "All Clients" || (row.account?.name || "Unassigned") === clientFilter;
     const matchesStatus = statusFilter === "All Status" || (row.status || "Unknown") === statusFilter;
     const matchesBilling = billingFilter === "All Billing" || (row.billingModel || "Unknown") === billingFilter;
+    const matchesPm = pmFilter === "All PMs" || (row.projectManagerName || "Unassigned") === pmFilter;
     const matchesDm = dmFilter === "All DMs" || (row.deliveryManagerName || "Unknown") === dmFilter;
-    return matchesSearch && matchesStatus && matchesBilling && matchesDm;
+    return matchesSearch && matchesClient && matchesStatus && matchesBilling && matchesPm && matchesDm;
   });
   const activeCount = filtered.filter((item) => item.status === "ACTIVE").length;
   const contractValue = filtered.reduce((sum, item) => sum + Number(item.contractValue || 0), 0);
@@ -42,23 +48,23 @@ export function SowsPage() {
         title="SOW Management"
         subtitle="Track active engagements, client ownership, commercial visibility, and delivery health."
         actions={
-          <div className="register-header-actions">
-            <div className="register-filter-bar">
-              <input placeholder="Search client, engagement..." value={search} onChange={(event) => setSearch(event.target.value)} />
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-                {statusOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={billingFilter} onChange={(event) => setBillingFilter(event.target.value)}>
-                {billingOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-              <select value={dmFilter} onChange={(event) => setDmFilter(event.target.value)}>
-                {dmOptions.map((option) => <option key={option}>{option}</option>)}
-              </select>
-            </div>
-            {canCreate ? <button onClick={() => navigate("/sows/new")}>Add SOW</button> : null}
-          </div>
+          canCreate ? <button onClick={() => navigate("/sows/new")}>Add SOW</button> : null
         }
       />
+      <div className="financial-filter-panel resource-filter-panel">
+        <div>
+          <strong>Filters apply to SOW register</strong>
+          <small>Client, PM, and DM narrow the SOW list and KPI totals below.</small>
+        </div>
+        <div className="financial-filter-grid resource-filter-grid refined">
+          <label><span>Search</span><input placeholder="Client, engagement..." value={search} onChange={(event) => setSearch(event.target.value)} /></label>
+          <label><span>Client</span><select value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>{clientOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Status</span><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>{statusOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Billing Model</span><select value={billingFilter} onChange={(event) => setBillingFilter(event.target.value)}>{billingOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Project Manager</span><select value={pmFilter} onChange={(event) => setPmFilter(event.target.value)}>{pmOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+          <label><span>Delivery Manager</span><select value={dmFilter} onChange={(event) => setDmFilter(event.target.value)}>{dmOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+        </div>
+      </div>
       <div className="stats-grid register-kpi-row">
         <StatCard label="Active SOWs" value={activeCount} />
         <StatCard label="Contract Value" value={`$${contractValue.toLocaleString()}`} />
