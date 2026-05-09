@@ -40,7 +40,7 @@ function weekSpanInclusive(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
   const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(1, Math.ceil(diffDays / 7));
+  return Math.max(1, Math.round(diffDays / 7));
 }
 
 function deriveCostGuidance(billRate, targetMargin, rules = DEFAULT_OVERHEAD_RULES, engagementType = "Full-Time", locationType = "Offshore") {

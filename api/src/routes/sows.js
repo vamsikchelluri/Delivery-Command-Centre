@@ -31,7 +31,7 @@ function weekSpanInclusive(startDate, endDate) {
     return 1;
   }
   const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-  return Math.max(1, Math.ceil(diffDays / 7));
+  return Math.max(1, Math.round(diffDays / 7));
 }
 
 router.get("/", async (_req, res) => {
