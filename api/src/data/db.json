@@ -44,64 +44,109 @@
       "name": "SAP FICO",
       "subModules": [
         {
-          "id": "SKL-2026-000001-0",
+          "id": "skill_fico-1",
           "code": "GL",
           "value": "GL",
-          "name": "General Ledger",
+          "name": "GL",
           "description": "",
           "sortOrder": 1,
           "active": true
         },
         {
-          "id": "SKL-2026-000001-1",
+          "id": "skill_fico-2",
           "code": "AP",
           "value": "AP",
-          "name": "Accounts Payable",
+          "name": "AP",
           "description": "",
           "sortOrder": 2,
           "active": true
         },
         {
-          "id": "SKL-2026-000001-2",
+          "id": "skill_fico-3",
           "code": "AR",
           "value": "AR",
-          "name": "Accounts Receivable",
+          "name": "AR",
           "description": "",
           "sortOrder": 3,
           "active": true
         },
         {
-          "id": "SKL-2026-000001-3",
+          "id": "skill_fico-4",
           "code": "AA",
           "value": "AA",
-          "name": "Asset Accounting",
+          "name": "AA",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000001-4",
+          "id": "skill_fico-5",
           "code": "CO",
           "value": "CO",
-          "name": "Controlling / Cost Center",
+          "name": "CO",
           "description": "",
           "sortOrder": 5,
           "active": true
         },
         {
-          "id": "SKL-2026-000001-5",
-          "code": "SKL-2026-000001-BA",
+          "id": "skill_fico-6",
+          "code": "FICO-BA",
           "value": "Bank Accounting",
           "name": "Bank Accounting",
           "description": "",
           "sortOrder": 6,
           "active": true
+        },
+        {
+          "id": "skill_fico-7",
+          "code": "CO-PA",
+          "value": "CO-PA",
+          "name": "CO-PA",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_fico-8",
+          "code": "CCA",
+          "value": "CCA",
+          "name": "CCA",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
+        },
+        {
+          "id": "skill_fico-9",
+          "code": "PCA",
+          "value": "PCA",
+          "name": "PCA",
+          "description": "",
+          "sortOrder": 9,
+          "active": true
+        },
+        {
+          "id": "skill_fico-10",
+          "code": "COPA",
+          "value": "COPA",
+          "name": "COPA",
+          "description": "",
+          "sortOrder": 10,
+          "active": true
+        },
+        {
+          "id": "skill_fico-11",
+          "code": "TREASURY",
+          "value": "Treasury",
+          "name": "Treasury",
+          "description": "",
+          "sortOrder": 11,
+          "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000001",
+      "code": "FICO",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 10,
       "updatedAt": "2026-04-28T09:27:59.996Z"
     },
     {
@@ -110,8 +155,8 @@
       "name": "SAP SD",
       "subModules": [
         {
-          "id": "SKL-2026-000002-0",
-          "code": "SKL-2026-000002-OTC",
+          "id": "skill_sd-1",
+          "code": "SD-OTC",
           "value": "Order to Cash",
           "name": "Order to Cash",
           "description": "",
@@ -119,46 +164,73 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000002-1",
-          "code": "PRICING",
-          "value": "Pricing",
-          "name": "Pricing",
+          "id": "skill_sd-2",
+          "code": "SD-OM",
+          "value": "Order Mgmt",
+          "name": "Order Mgmt",
           "description": "",
           "sortOrder": 2,
           "active": true
         },
         {
-          "id": "SKL-2026-000002-2",
-          "code": "BILLING",
-          "value": "Billing",
-          "name": "Billing",
+          "id": "skill_sd-3",
+          "code": "PRICING",
+          "value": "Pricing",
+          "name": "Pricing",
           "description": "",
           "sortOrder": 3,
           "active": true
         },
         {
-          "id": "SKL-2026-000002-3",
-          "code": "SKL-2026-000002-CM",
-          "value": "Credit Management",
-          "name": "Credit Management",
+          "id": "skill_sd-4",
+          "code": "BILLING",
+          "value": "Billing",
+          "name": "Billing",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000002-4",
-          "code": "SKL-2026-000002-LE",
+          "id": "skill_sd-5",
+          "code": "SD-CM",
+          "value": "Credit Management",
+          "name": "Credit Management",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_sd-6",
+          "code": "SD-CM",
+          "value": "Credit Mgmt",
+          "name": "Credit Mgmt",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_sd-7",
+          "code": "DELIVERY",
+          "value": "Delivery",
+          "name": "Delivery",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_sd-8",
+          "code": "SD-LE",
           "value": "Logistics Execution",
           "name": "Logistics Execution",
           "description": "",
-          "sortOrder": 5,
+          "sortOrder": 8,
           "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000002",
+      "code": "SD",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 20,
       "updatedAt": "2026-04-28T09:28:00.088Z"
     },
     {
@@ -167,8 +239,8 @@
       "name": "SAP MM",
       "subModules": [
         {
-          "id": "SKL-2026-000003-0",
-          "code": "SKL-2026-000003-PTP",
+          "id": "skill_mm-1",
+          "code": "MM-PTP",
           "value": "Procure to Pay",
           "name": "Procure to Pay",
           "description": "",
@@ -176,37 +248,73 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000003-1",
-          "code": "SKL-2026-000003-IM",
-          "value": "Inventory Management",
-          "name": "Inventory Management",
+          "id": "skill_mm-2",
+          "code": "PROCUREMENT",
+          "value": "Procurement",
+          "name": "Procurement",
           "description": "",
           "sortOrder": 2,
           "active": true
         },
         {
-          "id": "SKL-2026-000003-2",
-          "code": "PURCHASING",
-          "value": "Purchasing",
-          "name": "Purchasing",
+          "id": "skill_mm-3",
+          "code": "MM-IM",
+          "value": "Inventory Management",
+          "name": "Inventory Management",
           "description": "",
           "sortOrder": 3,
           "active": true
         },
         {
-          "id": "SKL-2026-000003-3",
-          "code": "SKL-2026-000003-MM",
+          "id": "skill_mm-4",
+          "code": "INVENTORY",
+          "value": "Inventory",
+          "name": "Inventory",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_mm-5",
+          "code": "PURCHASING",
+          "value": "Purchasing",
+          "name": "Purchasing",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_mm-6",
+          "code": "MM-MM",
           "value": "Material Master",
           "name": "Material Master",
           "description": "",
-          "sortOrder": 4,
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_mm-7",
+          "code": "MM-VM",
+          "value": "Vendor Mgmt",
+          "name": "Vendor Mgmt",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_mm-8",
+          "code": "MM-IV",
+          "value": "Invoice Verify",
+          "name": "Invoice Verify",
+          "description": "",
+          "sortOrder": 8,
           "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000003",
+      "code": "MM",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 30,
       "updatedAt": "2026-04-28T09:28:00.138Z"
     },
     {
@@ -215,7 +323,7 @@
       "name": "SAP ABAP",
       "subModules": [
         {
-          "id": "SKL-2026-000004-0",
+          "id": "skill_abap-1",
           "code": "REPORTS",
           "value": "Reports",
           "name": "Reports",
@@ -224,7 +332,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000004-1",
+          "id": "skill_abap-2",
           "code": "INTERFACES",
           "value": "Interfaces",
           "name": "Interfaces",
@@ -233,7 +341,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000004-2",
+          "id": "skill_abap-3",
           "code": "ENHANCEMENTS",
           "value": "Enhancements",
           "name": "Enhancements",
@@ -242,7 +350,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000004-3",
+          "id": "skill_abap-4",
           "code": "FORMS",
           "value": "Forms",
           "name": "Forms",
@@ -251,8 +359,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000004-4",
-          "code": "SKL-2026-000004-CV",
+          "id": "skill_abap-5",
+          "code": "ABAP-CV",
           "value": "CDS Views",
           "name": "CDS Views",
           "description": "",
@@ -260,19 +368,55 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000004-5",
+          "id": "skill_abap-6",
           "code": "ODATA",
           "value": "OData",
           "name": "OData",
           "description": "",
           "sortOrder": 6,
           "active": true
+        },
+        {
+          "id": "skill_abap-7",
+          "code": "BADIS",
+          "value": "BADIs",
+          "name": "BADIs",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_abap-8",
+          "code": "BAPIS",
+          "value": "BAPIs",
+          "name": "BAPIs",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
+        },
+        {
+          "id": "skill_abap-9",
+          "code": "SMARTFORMS",
+          "value": "SmartForms",
+          "name": "SmartForms",
+          "description": "",
+          "sortOrder": 9,
+          "active": true
+        },
+        {
+          "id": "skill_abap-10",
+          "code": "ALV",
+          "value": "ALV",
+          "name": "ALV",
+          "description": "",
+          "sortOrder": 10,
+          "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000004",
+      "code": "ABAP",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 40,
       "updatedAt": "2026-04-28T09:28:00.179Z"
     },
     {
@@ -281,8 +425,8 @@
       "name": "SAP Basis",
       "subModules": [
         {
-          "id": "SKL-2026-000005-0",
-          "code": "SKL-2026-000005-S4U",
+          "id": "skill_basis-1",
+          "code": "BASIS-S4U",
           "value": "S/4 Upgrade",
           "name": "S/4 Upgrade",
           "description": "",
@@ -290,46 +434,64 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000005-1",
-          "code": "SECURITY",
-          "value": "Security",
-          "name": "Security",
+          "id": "skill_basis-2",
+          "code": "BASIS-SA",
+          "value": "System Admin",
+          "name": "System Admin",
           "description": "",
           "sortOrder": 2,
           "active": true
         },
         {
-          "id": "SKL-2026-000005-2",
-          "code": "SKL-2026-000005-TM",
-          "value": "Transport Management",
-          "name": "Transport Management",
+          "id": "skill_basis-3",
+          "code": "TRANSPORT",
+          "value": "Transport",
+          "name": "Transport",
           "description": "",
           "sortOrder": 3,
           "active": true
         },
         {
-          "id": "SKL-2026-000005-3",
-          "code": "PERFORMANCE",
-          "value": "Performance",
-          "name": "Performance",
+          "id": "skill_basis-4",
+          "code": "BASIS-TM",
+          "value": "Transport Management",
+          "name": "Transport Management",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000005-4",
-          "code": "SKL-2026-000005-HA",
+          "id": "skill_basis-5",
+          "code": "SECURITY",
+          "value": "Security",
+          "name": "Security",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_basis-6",
+          "code": "PERFORMANCE",
+          "value": "Performance",
+          "name": "Performance",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_basis-7",
+          "code": "BASIS-HA",
           "value": "HANA Admin",
           "name": "HANA Admin",
           "description": "",
-          "sortOrder": 5,
+          "sortOrder": 7,
           "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000005",
+      "code": "BASIS",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 50,
       "updatedAt": "2026-04-28T09:28:00.228Z"
     },
     {
@@ -338,7 +500,7 @@
       "name": "SAP S/4HANA",
       "subModules": [
         {
-          "id": "SKL-2026-000006-0",
+          "id": "skill_s4-1",
           "code": "MIGRATION",
           "value": "Migration",
           "name": "Migration",
@@ -347,8 +509,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000006-1",
-          "code": "SKL-2026-000006-CF",
+          "id": "skill_s4-2",
+          "code": "S4HANA-CF",
           "value": "Central Finance",
           "name": "Central Finance",
           "description": "",
@@ -356,8 +518,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000006-2",
-          "code": "SKL-2026-000006-EA",
+          "id": "skill_s4-3",
+          "code": "S4HANA-EA",
           "value": "Embedded Analytics",
           "name": "Embedded Analytics",
           "description": "",
@@ -365,7 +527,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000006-3",
+          "id": "skill_s4-4",
           "code": "ACTIVATE",
           "value": "Activate",
           "name": "Activate",
@@ -374,19 +536,46 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000006-4",
+          "id": "skill_s4-5",
           "code": "FIORI",
           "value": "Fiori",
           "name": "Fiori",
           "description": "",
           "sortOrder": 5,
           "active": true
+        },
+        {
+          "id": "skill_s4-6",
+          "code": "S4HANA-CV",
+          "value": "CDS Views",
+          "name": "CDS Views",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_s4-7",
+          "code": "RAP",
+          "value": "RAP",
+          "name": "RAP",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_s4-8",
+          "code": "BTP",
+          "value": "BTP",
+          "name": "BTP",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000006",
+      "code": "S4HANA",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 60,
       "updatedAt": "2026-04-28T09:28:00.266Z"
     },
     {
@@ -395,7 +584,7 @@
       "name": "SAP EWM",
       "subModules": [
         {
-          "id": "SKL-2026-000007-0",
+          "id": "skill_ewm-1",
           "code": "INBOUND",
           "value": "Inbound",
           "name": "Inbound",
@@ -404,7 +593,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000007-1",
+          "id": "skill_ewm-2",
           "code": "OUTBOUND",
           "value": "Outbound",
           "name": "Outbound",
@@ -413,8 +602,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000007-2",
-          "code": "SKL-2026-000007-WM",
+          "id": "skill_ewm-3",
+          "code": "EWM-WM",
           "value": "Warehouse Monitor",
           "name": "Warehouse Monitor",
           "description": "",
@@ -422,7 +611,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000007-3",
+          "id": "skill_ewm-4",
           "code": "RF",
           "value": "RF",
           "name": "RF",
@@ -431,19 +620,55 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000007-4",
-          "code": "SKL-2026-000007-LM",
+          "id": "skill_ewm-5",
+          "code": "EWM-LM",
           "value": "Labor Management",
           "name": "Labor Management",
           "description": "",
           "sortOrder": 5,
           "active": true
+        },
+        {
+          "id": "skill_ewm-6",
+          "code": "STORAGE",
+          "value": "Storage",
+          "name": "Storage",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_ewm-7",
+          "code": "PICKING",
+          "value": "Picking",
+          "name": "Picking",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_ewm-8",
+          "code": "PACKING",
+          "value": "Packing",
+          "name": "Packing",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
+        },
+        {
+          "id": "skill_ewm-9",
+          "code": "EWM-LM",
+          "value": "Labour Mgmt",
+          "name": "Labour Mgmt",
+          "description": "",
+          "sortOrder": 9,
+          "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000007",
+      "code": "EWM",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 70,
       "updatedAt": "2026-04-28T09:28:00.302Z"
     },
     {
@@ -452,8 +677,8 @@
       "name": "SAP SuccessFactors",
       "subModules": [
         {
-          "id": "SKL-2026-000008-0",
-          "code": "SKL-2026-000008-EC",
+          "id": "skill_successfactors-1",
+          "code": "SUCCESSFACTORS-EC",
           "value": "Employee Central",
           "name": "Employee Central",
           "description": "",
@@ -461,7 +686,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000008-1",
+          "id": "skill_successfactors-2",
           "code": "RECRUITING",
           "value": "Recruiting",
           "name": "Recruiting",
@@ -470,7 +695,7 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000008-2",
+          "id": "skill_successfactors-3",
           "code": "ONBOARDING",
           "value": "Onboarding",
           "name": "Onboarding",
@@ -479,28 +704,55 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000008-3",
-          "code": "PERFORMANCE",
-          "value": "Performance",
-          "name": "Performance",
+          "id": "skill_successfactors-4",
+          "code": "LEARNING",
+          "value": "Learning",
+          "name": "Learning",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000008-4",
+          "id": "skill_successfactors-5",
+          "code": "PERFORMANCE",
+          "value": "Performance",
+          "name": "Performance",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_successfactors-6",
+          "code": "SUCCESSFACTORS-PG",
+          "value": "Performance & Goals",
+          "name": "Performance & Goals",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_successfactors-7",
           "code": "COMPENSATION",
           "value": "Compensation",
           "name": "Compensation",
           "description": "",
-          "sortOrder": 5,
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_successfactors-8",
+          "code": "SUCCESSFACTORS-WA",
+          "value": "Workforce Analytics",
+          "name": "Workforce Analytics",
+          "description": "",
+          "sortOrder": 8,
           "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000008",
+      "code": "SUCCESSFACTORS",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 80,
       "updatedAt": "2026-04-28T09:28:00.337Z"
     },
     {
@@ -509,55 +761,82 @@
       "name": "SAP Ariba",
       "subModules": [
         {
-          "id": "SKL-2026-000009-0",
-          "code": "SOURCING",
-          "value": "Sourcing",
-          "name": "Sourcing",
+          "id": "skill_ariba-1",
+          "code": "PROCUREMENT",
+          "value": "Procurement",
+          "name": "Procurement",
           "description": "",
           "sortOrder": 1,
           "active": true
         },
         {
-          "id": "SKL-2026-000009-1",
-          "code": "CONTRACTS",
-          "value": "Contracts",
-          "name": "Contracts",
+          "id": "skill_ariba-2",
+          "code": "SOURCING",
+          "value": "Sourcing",
+          "name": "Sourcing",
           "description": "",
           "sortOrder": 2,
           "active": true
         },
         {
-          "id": "SKL-2026-000009-2",
-          "code": "BUYING",
-          "value": "Buying",
-          "name": "Buying",
+          "id": "skill_ariba-3",
+          "code": "CONTRACTS",
+          "value": "Contracts",
+          "name": "Contracts",
           "description": "",
           "sortOrder": 3,
           "active": true
         },
         {
-          "id": "SKL-2026-000009-3",
-          "code": "SKL-2026-000009-SL",
-          "value": "Supplier Lifecycle",
-          "name": "Supplier Lifecycle",
+          "id": "skill_ariba-4",
+          "code": "BUYING",
+          "value": "Buying",
+          "name": "Buying",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000009-4",
+          "id": "skill_ariba-5",
+          "code": "ARIBA-SL",
+          "value": "Supplier Lifecycle",
+          "name": "Supplier Lifecycle",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_ariba-6",
+          "code": "ARIBA-SM",
+          "value": "Supplier Management",
+          "name": "Supplier Management",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_ariba-7",
+          "code": "ARIBA-GB",
+          "value": "Guided Buying",
+          "name": "Guided Buying",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_ariba-8",
           "code": "INTEGRATION",
           "value": "Integration",
           "name": "Integration",
           "description": "",
-          "sortOrder": 5,
+          "sortOrder": 8,
           "active": true
         }
       ],
       "active": true,
-      "code": "SKL-2026-000009",
+      "code": "ARIBA",
       "description": "",
-      "sortOrder": 999,
+      "sortOrder": 90,
       "updatedAt": "2026-04-28T09:28:00.366Z"
     },
     {
@@ -566,7 +845,7 @@
       "name": "SAP BTP",
       "subModules": [
         {
-          "id": "SKL-2026-000010-0",
+          "id": "skill_btp-1",
           "code": "CAP",
           "value": "CAP",
           "name": "CAP",
@@ -575,8 +854,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000010-1",
-          "code": "SKL-2026-000010-IS",
+          "id": "skill_btp-2",
+          "code": "BTP-IS",
           "value": "Integration Suite",
           "name": "Integration Suite",
           "description": "",
@@ -584,8 +863,8 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000010-2",
-          "code": "SKL-2026-000010-ES",
+          "id": "skill_btp-3",
+          "code": "BTP-ES",
           "value": "Extension Suite",
           "name": "Extension Suite",
           "description": "",
@@ -593,29 +872,848 @@
           "active": true
         },
         {
-          "id": "SKL-2026-000010-3",
-          "code": "WORKFLOW",
-          "value": "Workflow",
-          "name": "Workflow",
+          "id": "skill_btp-4",
+          "code": "BTP-DA",
+          "value": "Data & Analytics",
+          "name": "Data & Analytics",
           "description": "",
           "sortOrder": 4,
           "active": true
         },
         {
-          "id": "SKL-2026-000010-4",
-          "code": "SKL-2026-000010-BA",
+          "id": "skill_btp-5",
+          "code": "BTP-AE",
+          "value": "ABAP Environment",
+          "name": "ABAP Environment",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_btp-6",
+          "code": "WORKFLOW",
+          "value": "Workflow",
+          "name": "Workflow",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_btp-7",
+          "code": "BTP-BA",
           "value": "Build Apps",
           "name": "Build Apps",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        }
+      ],
+      "active": true,
+      "code": "BTP",
+      "description": "",
+      "sortOrder": 100,
+      "updatedAt": "2026-04-28T09:28:00.399Z"
+    },
+    {
+      "id": "skill_pp",
+      "number": "SKL-2026-000011",
+      "code": "PP",
+      "name": "SAP PP",
+      "description": "",
+      "sortOrder": 110,
+      "subModules": [
+        {
+          "id": "skill_pp-1",
+          "code": "PP-DM",
+          "value": "Discrete Manufacturing",
+          "name": "Discrete Manufacturing",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_pp-2",
+          "code": "PP-PM",
+          "value": "Process Manufacturing",
+          "name": "Process Manufacturing",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_pp-3",
+          "code": "MRP",
+          "value": "MRP",
+          "name": "MRP",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_pp-4",
+          "code": "PP-CP",
+          "value": "Capacity Planning",
+          "name": "Capacity Planning",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_pp-5",
+          "code": "PP-PO",
+          "value": "Production Orders",
+          "name": "Production Orders",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_pp-6",
+          "code": "PP-QI",
+          "value": "QM Integration",
+          "name": "QM Integration",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_hcm",
+      "number": "SKL-2026-000012",
+      "code": "HCM",
+      "name": "SAP HCM",
+      "description": "",
+      "sortOrder": 120,
+      "subModules": [
+        {
+          "id": "skill_hcm-1",
+          "code": "PAYROLL",
+          "value": "Payroll",
+          "name": "Payroll",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_hcm-2",
+          "code": "HCM-TM",
+          "value": "Time Mgmt",
+          "name": "Time Mgmt",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_hcm-3",
+          "code": "OM",
+          "value": "OM",
+          "name": "OM",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_hcm-4",
+          "code": "PA",
+          "value": "PA",
+          "name": "PA",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_hcm-5",
+          "code": "RECRUITMENT",
+          "value": "Recruitment",
+          "name": "Recruitment",
           "description": "",
           "sortOrder": 5,
           "active": true
         }
       ],
-      "active": true,
-      "code": "SKL-2026-000010",
+      "active": true
+    },
+    {
+      "id": "skill_pm",
+      "number": "SKL-2026-000013",
+      "code": "PM",
+      "name": "SAP PM",
+      "description": "",
+      "sortOrder": 130,
+      "subModules": [
+        {
+          "id": "skill_pm-1",
+          "code": "PM-MO",
+          "value": "Maintenance Orders",
+          "name": "Maintenance Orders",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_pm-2",
+          "code": "PM-WC",
+          "value": "Work Centres",
+          "name": "Work Centres",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_pm-3",
+          "code": "NOTIFICATIONS",
+          "value": "Notifications",
+          "name": "Notifications",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_basis_infra",
+      "number": "SKL-2026-000014",
+      "code": "BASIS-INFRA",
+      "name": "Basis/Infra",
+      "description": "",
+      "sortOrder": 140,
+      "subModules": [
+        {
+          "id": "skill_basis_infra-1",
+          "code": "BASIS-INFRA-SA",
+          "value": "System Administration",
+          "name": "System Administration",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-2",
+          "code": "BASIS-INFRA-TM",
+          "value": "Transport Management",
+          "name": "Transport Management",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-3",
+          "code": "BASIS-INFRA-PT",
+          "value": "Performance Tuning",
+          "name": "Performance Tuning",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-4",
+          "code": "BASIS-INFRA-SR",
+          "value": "SAP Router",
+          "name": "SAP Router",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-5",
+          "code": "SSO",
+          "value": "SSO",
+          "name": "SSO",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-6",
+          "code": "BASIS-INFRA-HA",
+          "value": "HANA Administration",
+          "name": "HANA Administration",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_basis_infra-7",
+          "code": "BASIS-INFRA-BRC",
+          "value": "BTP/RISE Cloud",
+          "name": "BTP/RISE Cloud",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_bw_bi",
+      "number": "SKL-2026-000015",
+      "code": "BWBI",
+      "name": "SAP BW/BI",
+      "description": "",
+      "sortOrder": 150,
+      "subModules": [
+        {
+          "id": "skill_bw_bi-1",
+          "code": "BWBI-BC",
+          "value": "BW Classic",
+          "name": "BW Classic",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_bw_bi-2",
+          "code": "BW/4HANA",
+          "value": "BW/4HANA",
+          "name": "BW/4HANA",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_bw_bi-3",
+          "code": "SAC",
+          "value": "SAC",
+          "name": "SAC",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_bw_bi-4",
+          "code": "BWBI-AFO",
+          "value": "Analysis for Office",
+          "name": "Analysis for Office",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_bw_bi-5",
+          "code": "BEX",
+          "value": "BEx",
+          "name": "BEx",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_qm",
+      "number": "SKL-2026-000016",
+      "code": "QM",
+      "name": "SAP QM",
+      "description": "",
+      "sortOrder": 160,
+      "subModules": [
+        {
+          "id": "skill_qm-1",
+          "code": "QM-IL",
+          "value": "Inspection Lots",
+          "name": "Inspection Lots",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_qm-2",
+          "code": "QM-QP",
+          "value": "Quality Plans",
+          "name": "Quality Plans",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_qm-3",
+          "code": "NOTIFICATIONS",
+          "value": "Notifications",
+          "name": "Notifications",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_project_management",
+      "number": "SKL-2026-000017",
+      "code": "PMO",
+      "name": "Project Management",
+      "description": "",
+      "sortOrder": 170,
+      "subModules": [
+        {
+          "id": "skill_project_management-1",
+          "code": "PMO",
+          "value": "PMO",
+          "name": "PMO",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-2",
+          "code": "WATERFALL",
+          "value": "Waterfall",
+          "name": "Waterfall",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-3",
+          "code": "AGILE",
+          "value": "Agile",
+          "name": "Agile",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-4",
+          "code": "AGILE/SCRUM",
+          "value": "Agile/Scrum",
+          "name": "Agile/Scrum",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-5",
+          "code": "PMO-SA",
+          "value": "SAP Activate",
+          "name": "SAP Activate",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-6",
+          "code": "PMO-SM",
+          "value": "Stakeholder Mgmt",
+          "name": "Stakeholder Mgmt",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-7",
+          "code": "PMO-MP",
+          "value": "MS Project",
+          "name": "MS Project",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-8",
+          "code": "PMO-RM",
+          "value": "RAID Management",
+          "name": "RAID Management",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
+        },
+        {
+          "id": "skill_project_management-9",
+          "code": "PMO-ER",
+          "value": "Executive Reporting",
+          "name": "Executive Reporting",
+          "description": "",
+          "sortOrder": 9,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_concur",
+      "number": "SKL-2026-000018",
+      "code": "CONCUR",
+      "name": "SAP Concur",
+      "description": "",
+      "sortOrder": 180,
+      "subModules": [
+        {
+          "id": "skill_concur-1",
+          "code": "TRAVEL",
+          "value": "Travel",
+          "name": "Travel",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_concur-2",
+          "code": "EXPENSE",
+          "value": "Expense",
+          "name": "Expense",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_concur-3",
+          "code": "INVOICE",
+          "value": "Invoice",
+          "name": "Invoice",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_concur-4",
+          "code": "INTEGRATION",
+          "value": "Integration",
+          "name": "Integration",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_fieldglass",
+      "number": "SKL-2026-000019",
+      "code": "FIELDGLASS",
+      "name": "SAP Fieldglass",
+      "description": "",
+      "sortOrder": 190,
+      "subModules": [
+        {
+          "id": "skill_fieldglass-1",
+          "code": "FIELDGLASS-VM",
+          "value": "Vendor Management",
+          "name": "Vendor Management",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_fieldglass-2",
+          "code": "FIELDGLASS-SM",
+          "value": "SOW Management",
+          "name": "SOW Management",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_fieldglass-3",
+          "code": "FIELDGLASS-WT",
+          "value": "Worker Tracking",
+          "name": "Worker Tracking",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_ibp",
+      "number": "SKL-2026-000020",
+      "code": "IBP",
+      "name": "SAP IBP",
+      "description": "",
+      "sortOrder": 200,
+      "subModules": [
+        {
+          "id": "skill_ibp-1",
+          "code": "IBP-DP",
+          "value": "Demand Planning",
+          "name": "Demand Planning",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_ibp-2",
+          "code": "IBP-SP",
+          "value": "Supply Planning",
+          "name": "Supply Planning",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_ibp-3",
+          "code": "IBP-SO",
+          "value": "S&OP",
+          "name": "S&OP",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_ibp-4",
+          "code": "IBP-IO",
+          "value": "Inventory Optimization",
+          "name": "Inventory Optimization",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_ibp-5",
+          "code": "IBP-RP",
+          "value": "Response Planning",
+          "name": "Response Planning",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_c4c_cx",
+      "number": "SKL-2026-000021",
+      "code": "C4C-CX",
+      "name": "SAP C4C/CX",
+      "description": "",
+      "sortOrder": 210,
+      "subModules": [
+        {
+          "id": "skill_c4c_cx-1",
+          "code": "C4C-CX-SC",
+          "value": "Sales Cloud",
+          "name": "Sales Cloud",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_c4c_cx-2",
+          "code": "C4C-CX-SC",
+          "value": "Service Cloud",
+          "name": "Service Cloud",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_c4c_cx-3",
+          "code": "C4C-CX-MC",
+          "value": "Marketing Cloud",
+          "name": "Marketing Cloud",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_c4c_cx-4",
+          "code": "C4C-CX-CC",
+          "value": "Commerce Cloud",
+          "name": "Commerce Cloud",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_c4c_cx-5",
+          "code": "CDP",
+          "value": "CDP",
+          "name": "CDP",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_s4_migration",
+      "number": "SKL-2026-000022",
+      "code": "S4-MIG",
+      "name": "SAP S/4HANA Migration",
+      "description": "",
+      "sortOrder": 220,
+      "subModules": [
+        {
+          "id": "skill_s4_migration-1",
+          "code": "ASSESSMENT",
+          "value": "Assessment",
+          "name": "Assessment",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-2",
+          "code": "S4-MIG-DM",
+          "value": "Data Migration",
+          "name": "Data Migration",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-3",
+          "code": "CUTOVER",
+          "value": "Cutover",
+          "name": "Cutover",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-4",
+          "code": "S4-MIG-RM",
+          "value": "RISE Migration",
+          "name": "RISE Migration",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-5",
+          "code": "BROWNFIELD",
+          "value": "Brownfield",
+          "name": "Brownfield",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-6",
+          "code": "GREENFIELD",
+          "value": "Greenfield",
+          "name": "Greenfield",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_s4_migration-7",
+          "code": "S4-MIG-SDT",
+          "value": "Selective Data Transition",
+          "name": "Selective Data Transition",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_abap_core",
+      "number": "SKL-2026-000023",
+      "code": "ABAP-CORE",
+      "name": "ABAP",
+      "description": "",
+      "sortOrder": 230,
+      "subModules": [
+        {
+          "id": "skill_abap_core-1",
+          "code": "ABAP-CORE-CA",
+          "value": "Core ABAP",
+          "name": "Core ABAP",
+          "description": "",
+          "sortOrder": 1,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-2",
+          "code": "OOP",
+          "value": "OOP",
+          "name": "OOP",
+          "description": "",
+          "sortOrder": 2,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-3",
+          "code": "BAPI/RFC",
+          "value": "BAPI/RFC",
+          "name": "BAPI/RFC",
+          "description": "",
+          "sortOrder": 3,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-4",
+          "code": "ABAP-CORE-BE",
+          "value": "BAdI/Enhancement",
+          "name": "BAdI/Enhancement",
+          "description": "",
+          "sortOrder": 4,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-5",
+          "code": "ABAP-CORE-SAF",
+          "value": "SmartForms/Adobe Forms",
+          "name": "SmartForms/Adobe Forms",
+          "description": "",
+          "sortOrder": 5,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-6",
+          "code": "ALV",
+          "value": "ALV",
+          "name": "ALV",
+          "description": "",
+          "sortOrder": 6,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-7",
+          "code": "WORKFLOW",
+          "value": "Workflow",
+          "name": "Workflow",
+          "description": "",
+          "sortOrder": 7,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-8",
+          "code": "ABAP-CORE-AOH",
+          "value": "ABAP on HANA",
+          "name": "ABAP on HANA",
+          "description": "",
+          "sortOrder": 8,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-9",
+          "code": "ABAP-CORE-CV",
+          "value": "CDS Views",
+          "name": "CDS Views",
+          "description": "",
+          "sortOrder": 9,
+          "active": true
+        },
+        {
+          "id": "skill_abap_core-10",
+          "code": "ODATA/REST",
+          "value": "OData/REST",
+          "name": "OData/REST",
+          "description": "",
+          "sortOrder": 10,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "skill_other",
+      "number": "SKL-2026-000024",
+      "code": "OTHER",
+      "name": "Other",
       "description": "",
       "sortOrder": 999,
-      "updatedAt": "2026-04-28T09:28:00.399Z"
+      "subModules": [],
+      "active": true
     }
   ],
   "currencies": [

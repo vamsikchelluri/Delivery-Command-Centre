@@ -18,6 +18,7 @@
     "db:migrate": "npm run db:migrate --workspace api",
     "db:seed": "npm run db:seed --workspace api",
     "db:seed-master": "npm run db:seed-master --workspace api",
+    "db:upsert-sap-modules": "npm run db:upsert-sap-modules --workspace api",
     "db:import-json": "npm run db:import-json --workspace api",
     "db:import-full-json:dev": "npm run db:import-full-json:dev --workspace api",
     "smoke:data-entry": "node api/scripts/dataEntrySmoke.js",

@@ -1,3 +1,5 @@
+import { sapModuleCatalog } from "./sapModuleCatalog.js";
+
 const permissionFeatures = [
   { id: "feature_command_center", key: "commandCenter", name: "Command Center", category: "Navigation", actions: ["view"] },
   { id: "feature_clients", key: "clients", name: "Clients", category: "Core", actions: ["view", "create", "edit", "delete", "export"] },
@@ -56,78 +58,7 @@ const appRoles = [
 ];
 
 export const seedData = {
-  skills: [
-    {
-      id: "skill_fico",
-      number: "SKL-2026-000001",
-      name: "SAP FICO",
-      subModules: ["GL", "AP", "AR", "AA", "CO", "Bank Accounting"],
-      active: true
-    },
-    {
-      id: "skill_sd",
-      number: "SKL-2026-000002",
-      name: "SAP SD",
-      subModules: ["Order to Cash", "Pricing", "Billing", "Credit Management", "Logistics Execution"],
-      active: true
-    },
-    {
-      id: "skill_mm",
-      number: "SKL-2026-000003",
-      name: "SAP MM",
-      subModules: ["Procure to Pay", "Inventory Management", "Purchasing", "Material Master"],
-      active: true
-    },
-    {
-      id: "skill_abap",
-      number: "SKL-2026-000004",
-      name: "SAP ABAP",
-      subModules: ["Reports", "Interfaces", "Enhancements", "Forms", "CDS Views", "OData"],
-      active: true
-    },
-    {
-      id: "skill_basis",
-      number: "SKL-2026-000005",
-      name: "SAP Basis",
-      subModules: ["S/4 Upgrade", "Security", "Transport Management", "Performance", "HANA Admin"],
-      active: true
-    },
-    {
-      id: "skill_s4",
-      number: "SKL-2026-000006",
-      name: "SAP S/4HANA",
-      subModules: ["Migration", "Central Finance", "Embedded Analytics", "Activate", "Fiori"],
-      active: true
-    },
-    {
-      id: "skill_ewm",
-      number: "SKL-2026-000007",
-      name: "SAP EWM",
-      subModules: ["Inbound", "Outbound", "Warehouse Monitor", "RF", "Labor Management"],
-      active: true
-    },
-    {
-      id: "skill_successfactors",
-      number: "SKL-2026-000008",
-      name: "SAP SuccessFactors",
-      subModules: ["Employee Central", "Recruiting", "Onboarding", "Performance", "Compensation"],
-      active: true
-    },
-    {
-      id: "skill_ariba",
-      number: "SKL-2026-000009",
-      name: "SAP Ariba",
-      subModules: ["Sourcing", "Contracts", "Buying", "Supplier Lifecycle", "Integration"],
-      active: true
-    },
-    {
-      id: "skill_btp",
-      number: "SKL-2026-000010",
-      name: "SAP BTP",
-      subModules: ["CAP", "Integration Suite", "Extension Suite", "Workflow", "Build Apps"],
-      active: true
-    }
-  ],
+  skills: sapModuleCatalog,
   currencies: [
     { id: "cur_usd", code: "USD", name: "US Dollar", fxToUsd: 1, active: true },
     { id: "cur_inr", code: "INR", name: "Indian Rupee", fxToUsd: 88, active: true },
