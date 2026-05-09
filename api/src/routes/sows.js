@@ -113,7 +113,7 @@ router.post("/", async (req, res) => {
     travelExpensesNotes: z.string().optional(),
     projectManagerName: z.string().min(2),
     deliveryManagerName: z.string().min(2),
-    accountManagerName: z.string().min(2),
+    accountManagerName: z.string().optional().default(""),
     projectHealth: z.string().optional(),
     createdFrom: z.string().default("DIRECT")
   });

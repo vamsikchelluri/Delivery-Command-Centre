@@ -730,13 +730,11 @@ export function SowFormPage() {
   useEffect(() => {
     const projectManagers = usersByDeliveryRole(users, "PM", "Project Manager");
     const deliveryManagers = usersByDeliveryRole(users, "DM", "Delivery Manager");
-    const accountManagers = usersByRole(users, "Account Manager");
     if (!record && users.length) {
       setForm((current) => ({
         ...current,
         projectManagerName: current.projectManagerName || projectManagers[0]?.name || "",
-        deliveryManagerName: current.deliveryManagerName || deliveryManagers[0]?.name || "",
-        accountManagerName: current.accountManagerName || accountManagers[0]?.name || ""
+        deliveryManagerName: current.deliveryManagerName || deliveryManagers[0]?.name || ""
       }));
     }
   }, [users, record]);
@@ -856,7 +854,7 @@ export function SowFormPage() {
                 </select>
               </Field>
               <Field label="Account Manager">
-                <select value={form.accountManagerName} onChange={(event) => setForm({ ...form, accountManagerName: event.target.value })} required>
+                <select value={form.accountManagerName} onChange={(event) => setForm({ ...form, accountManagerName: event.target.value })}>
                   <option value="">Select</option>
                   {usersByRole(users, "Account Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
                 </select>
