@@ -18,6 +18,7 @@ import adminRoutes from "./routes/admin.js";
 import childRoutes from "./routes/children.js";
 import { requireAuth, requireChildCollectionPermission, requirePermission, requirePlatformAdmin } from "./middleware/auth.js";
 import { redactSensitiveFinancials } from "./middleware/sensitiveData.js";
+import { initializeStore } from "./data/store.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -75,6 +76,8 @@ app.use((error, _req, res, _next) => {
     detail: error?.code || error?.message || "Unexpected failure"
   });
 });
+
+await initializeStore();
 
 app.listen(config.port, () => {
   console.log(`API running on http://localhost:${config.port}`);

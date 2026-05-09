@@ -1,134 +1,231 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { prisma } from "../prisma.js";
 import { seedData } from "./seedData.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dbPath = path.join(__dirname, "db.json");
 
-function normalizeOpportunity(opportunity) {
-  const seededOpportunity = seedData.opportunities.find((item) => item.id === opportunity.id);
-  return {
-    source: seededOpportunity?.source || opportunity.source || "Existing Client",
-    targetMargin: seededOpportunity?.targetMargin ?? opportunity.targetMargin ?? 0,
-    notesHistory: seededOpportunity?.notesHistory || opportunity.notesHistory || []
-  };
-}
+const collectionModels = {
+  accounts: "account",
+  users: "user",
+  resources: "resource",
+  opportunities: "opportunity",
+  opportunityRoles: "opportunityRole",
+  sows: "sow",
+  sowRoles: "sowRole",
+  deployments: "deployment",
+  deploymentPlans: "deploymentPlan",
+  actuals: "actual",
+  milestones: "milestone",
+  sowAttachments: "sowAttachment",
+  auditLogs: "auditLog",
+  skills: "skill",
+  currencies: "currency",
+  regions: "region",
+  locations: "location",
+  experienceLevels: "experienceLevel",
+  systemConfigs: "systemConfig",
+  numberRanges: "numberRange",
+  appRoles: "appRole",
+  permissionFeatures: "permissionFeature",
+  rolePermissions: "rolePermission"
+};
 
-function mergeSeedRecords(currentRecords = [], seededRecords = []) {
-  const merged = [...currentRecords];
-  for (const seededRecord of seededRecords) {
-    if (!merged.some((record) => record.id === seededRecord.id)) {
-      merged.push(seededRecord);
-    }
+const dateFields = {
+  resources: ["joiningDate", "availabilityDate", "deliveryRollOffDate", "notAvailableFrom", "notAvailableTo", "createdAt", "updatedAt"],
+  opportunities: ["expectedCloseDate", "expectedStartDate", "expectedEndDate", "createdAt", "updatedAt"],
+  opportunityRoles: ["startDate", "endDate", "createdAt", "updatedAt"],
+  sows: ["startDate", "endDate", "createdAt", "updatedAt"],
+  sowRoles: ["startDate", "endDate", "createdAt", "updatedAt"],
+  deployments: ["startDate", "endDate", "createdAt", "updatedAt"],
+  deploymentPlans: ["month", "createdAt", "updatedAt"],
+  actuals: ["month", "enteredDate", "createdAt", "updatedAt"],
+  milestones: ["plannedDate", "actualDate", "invoiceDate", "paymentDate", "createdAt", "updatedAt"],
+  sowAttachments: ["createdAt", "updatedAt"],
+  accounts: ["createdAt", "updatedAt"],
+  users: ["createdAt", "updatedAt"],
+  auditLogs: ["createdAt"],
+  skills: ["createdAt", "updatedAt"],
+  appRoles: ["createdAt", "updatedAt"],
+  permissionFeatures: ["createdAt", "updatedAt"],
+  rolePermissions: ["createdAt", "updatedAt"]
+};
+
+const enumDefaults = {
+  resources: {
+    employmentStatus: "ACTIVE",
+    deliveryStatus: "AVAILABLE"
+  },
+  opportunities: {
+    stage: "QUALIFYING"
+  },
+  sows: {
+    billingModel: "TM_HOURLY",
+    status: "DRAFT"
+  },
+  deployments: {
+    status: "ACTIVE"
+  },
+  deploymentPlans: {
+    plannedUnit: "HOURS"
+  },
+  actuals: {
+    actualUnit: "HOURS"
+  },
+  sowRoles: {
+    measurementUnit: "HOURS"
   }
-  return merged;
-}
+};
 
-function ensureDb() {
+let db = {};
+let initialized = false;
+let writeQueue = Promise.resolve();
+
+function readLocalDb() {
   if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify(seedData, null, 2), "utf8");
-    return;
+    return seedData;
   }
-
-  const current = JSON.parse(fs.readFileSync(dbPath, "utf8"));
-  let changed = false;
-
-  for (const [key, value] of Object.entries(seedData)) {
-    if (!current[key]) {
-      current[key] = value;
-      changed = true;
-    }
-  }
-
-  for (const key of ["skills", "currencies", "regions", "locations", "experienceLevels", "systemConfigs", "numberRanges", "appRoles", "permissionFeatures", "rolePermissions"]) {
-    const merged = mergeSeedRecords(current[key], seedData[key]);
-    if (JSON.stringify(merged) !== JSON.stringify(current[key])) {
-      current[key] = merged;
-      changed = true;
-    }
-  }
-
-  if (current.opportunities) {
-    current.opportunities = current.opportunities.map((opportunity) => {
-      const normalized = normalizeOpportunity(opportunity);
-      const hasChanges =
-        opportunity.source !== normalized.source ||
-        opportunity.targetMargin !== normalized.targetMargin ||
-        JSON.stringify(opportunity.notesHistory || []) !== JSON.stringify(normalized.notesHistory);
-
-      if (hasChanges) {
-        changed = true;
-        return {
-          ...opportunity,
-          ...normalized
-        };
-      }
-
-      return opportunity;
-    });
-  }
-
-  if (current.opportunityRoles) {
-    current.opportunityRoles = current.opportunityRoles.map((role) => {
-      const seededRole = seedData.opportunityRoles.find((item) => item.id === role.id);
-      const nextRoleLocation = seededRole?.roleLocation || role.roleLocation || "Offshore";
-      if (role.roleLocation !== nextRoleLocation) {
-        changed = true;
-        return {
-          ...role,
-          roleLocation: nextRoleLocation
-        };
-      }
-      return role;
-    });
-  }
-
-  if (current.sowRoles) {
-    current.sowRoles = current.sowRoles.map((role) => {
-      const seededRole = seedData.sowRoles.find((item) => item.id === role.id);
-      const nextLocationRequirement = seededRole?.locationRequirement || role.locationRequirement || "Offshore";
-      if (role.locationRequirement !== nextLocationRequirement) {
-        changed = true;
-        return {
-          ...role,
-          locationRequirement: nextLocationRequirement
-        };
-      }
-      return role;
-    });
-  }
-
-  if (changed) {
-    fs.writeFileSync(dbPath, JSON.stringify(current, null, 2), "utf8");
-  }
-}
-
-function loadDb() {
-  ensureDb();
   return JSON.parse(fs.readFileSync(dbPath, "utf8"));
 }
 
-function saveDb(data) {
-  fs.writeFileSync(dbPath, JSON.stringify(data, null, 2), "utf8");
+function serializeRecord(record) {
+  return Object.fromEntries(Object.entries(record).map(([key, value]) => [
+    key,
+    value instanceof Date ? value.toISOString() : value
+  ]));
+}
+
+function serializeRows(rows) {
+  return rows.map(serializeRecord);
+}
+
+function cleanForPrisma(collection, record) {
+  const cleaned = { ...record };
+  delete cleaned.account;
+  delete cleaned.client;
+  delete cleaned.roles;
+  delete cleaned.deployments;
+  delete cleaned.resource;
+  delete cleaned.sow;
+  delete cleaned.opportunity;
+  delete cleaned.actuals;
+  delete cleaned.milestones;
+  delete cleaned.attachments;
+  delete cleaned.auditTrail;
+  delete cleaned.conversionHistory;
+  delete cleaned.currentDeployedPercent;
+  delete cleaned.currentAvailablePercent;
+  delete cleaned.currentActiveSowName;
+  delete cleaned.currentDeliveryStatus;
+  delete cleaned.currentDeliveryStatusLabel;
+
+  for (const field of dateFields[collection] || []) {
+    if (cleaned[field] === "" || cleaned[field] === null) {
+      cleaned[field] = null;
+    } else if (cleaned[field]) {
+      const parsed = new Date(cleaned[field]);
+      cleaned[field] = Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
+  for (const [field, fallback] of Object.entries(enumDefaults[collection] || {})) {
+    if (!cleaned[field]) {
+      cleaned[field] = fallback;
+    }
+  }
+
+  return Object.fromEntries(Object.entries(cleaned).filter(([, value]) => value !== undefined));
+}
+
+function enqueueWrite(task) {
+  writeQueue = writeQueue
+    .then(task)
+    .catch((error) => {
+      console.error("Postgres write-through failed", error);
+    });
+  return writeQueue;
+}
+
+async function persistCreate(collection, record) {
+  const model = collectionModels[collection];
+  if (!model) return;
+  await prisma[model].create({
+    data: cleanForPrisma(collection, record)
+  });
+}
+
+async function persistUpdate(collection, id, changes) {
+  const model = collectionModels[collection];
+  if (!model) return;
+  const data = cleanForPrisma(collection, changes);
+  delete data.id;
+  delete data.createdAt;
+  await prisma[model].update({
+    where: { id },
+    data
+  });
+}
+
+async function persistDelete(collection, id) {
+  const model = collectionModels[collection];
+  if (!model) return;
+  await prisma[model].delete({
+    where: { id }
+  });
+}
+
+async function bootstrapIfEmpty(collection, localDb) {
+  const model = collectionModels[collection];
+  const localRows = localDb[collection] || [];
+  if (!model || !localRows.length) return;
+
+  const count = await prisma[model].count();
+  if (count > 0) return;
+
+  await prisma[model].createMany({
+    data: localRows.map((row) => cleanForPrisma(collection, row)),
+    skipDuplicates: true
+  });
+}
+
+export async function initializeStore() {
+  if (initialized) return;
+  const localDb = readLocalDb();
+
+  // Prevent login lockout and preserve local starter records when a table is brand new.
+  for (const collection of Object.keys(collectionModels)) {
+    await bootstrapIfEmpty(collection, localDb);
+  }
+
+  for (const [collection, model] of Object.entries(collectionModels)) {
+    db[collection] = serializeRows(await prisma[model].findMany());
+  }
+
+  initialized = true;
+  console.log("Postgres-backed store initialized");
 }
 
 export function getCollection(name) {
-  const db = loadDb();
   return db[name] || [];
 }
 
 export function addRecord(name, record) {
-  const db = loadDb();
+  const created = {
+    id: record.id || crypto.randomUUID(),
+    createdAt: record.createdAt || new Date().toISOString(),
+    updatedAt: record.updatedAt || new Date().toISOString(),
+    ...record
+  };
   db[name] = db[name] || [];
-  db[name].push(record);
-  saveDb(db);
-  return record;
+  db[name].push(created);
+  enqueueWrite(() => persistCreate(name, created));
+  return created;
 }
 
 export function updateRecord(name, id, changes) {
-  const db = loadDb();
   db[name] = db[name] || [];
   const index = db[name].findIndex((record) => record.id === id);
 
@@ -136,17 +233,17 @@ export function updateRecord(name, id, changes) {
     return null;
   }
 
-  db[name][index] = {
+  const updated = {
     ...db[name][index],
     ...changes,
     updatedAt: new Date().toISOString()
   };
-  saveDb(db);
-  return db[name][index];
+  db[name][index] = updated;
+  enqueueWrite(() => persistUpdate(name, id, { ...changes, updatedAt: updated.updatedAt }));
+  return updated;
 }
 
 export function deleteRecord(name, id) {
-  const db = loadDb();
   db[name] = db[name] || [];
   const index = db[name].findIndex((record) => record.id === id);
 
@@ -155,14 +252,12 @@ export function deleteRecord(name, id) {
   }
 
   const [deleted] = db[name].splice(index, 1);
-  saveDb(db);
+  enqueueWrite(() => persistDelete(name, id));
   return deleted;
 }
 
 export function addAudit({ entityName, recordId, actionType, actor = "System", oldValue, newValue, sourceScreen, importReference }) {
-  const db = loadDb();
-  db.auditLogs = db.auditLogs || [];
-  const next = db.auditLogs.length + 1;
+  const next = (db.auditLogs || []).length + 1;
   const year = new Date().getFullYear();
   const audit = {
     id: crypto.randomUUID(),
@@ -178,8 +273,9 @@ export function addAudit({ entityName, recordId, actionType, actor = "System", o
     importReference,
     createdAt: new Date().toISOString()
   };
+  db.auditLogs = db.auditLogs || [];
   db.auditLogs.push(audit);
-  saveDb(db);
+  enqueueWrite(() => persistCreate("auditLogs", audit));
   return audit;
 }
 
@@ -217,7 +313,6 @@ export function upsertRecord(name, record, actor = "System", sourceScreen = "API
 }
 
 export function nextDocumentNumber(objectType) {
-  const db = loadDb();
   const ranges = db.numberRanges || [];
   const range = ranges.find((item) => item.objectType === objectType || item.prefix === objectType);
   const year = new Date().getFullYear();
@@ -229,10 +324,14 @@ export function nextDocumentNumber(objectType) {
 
   const number = `${range.prefix}-${range.includeYear ? `${year}-` : ""}${String(range.nextNumber).padStart(range.sequenceLength, "0")}`;
   range.nextNumber += 1;
-  saveDb(db);
+  enqueueWrite(() => persistUpdate("numberRanges", range.id, { nextNumber: range.nextNumber }));
   return number;
 }
 
 export function getDatabaseSnapshot() {
-  return loadDb();
+  return db;
+}
+
+export async function flushStoreWrites() {
+  await writeQueue;
 }
