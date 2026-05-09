@@ -204,6 +204,7 @@ const collections = {
       name: z.string().min(2),
       email: z.string().email(),
       role: z.string().min(2),
+      deliveryRoles: z.array(z.enum(["PM", "DM"])).default([]),
       canViewCost: z.boolean().default(false),
       canViewMargin: z.boolean().default(false),
       temporaryPassword: z.string().min(8).optional().or(z.literal(""))

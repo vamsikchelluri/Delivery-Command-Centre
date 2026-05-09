@@ -34,6 +34,13 @@ function usersByRole(users, roleName) {
   return users.filter((user) => user.role === roleName);
 }
 
+function usersByDeliveryRole(users, deliveryRole, legacyRoleName) {
+  return users.filter((user) =>
+    (user.deliveryRoles || []).includes(deliveryRole) ||
+    (!user.deliveryRoles?.length && user.role === legacyRoleName)
+  );
+}
+
 function activeSkills(skills) {
   return skills.filter((skill) => skill.active !== false);
 }
@@ -530,7 +537,7 @@ export function OpportunityFormPage() {
 
   useEffect(() => {
     const accountManagers = usersByRole(users, "Account Manager");
-    const deliveryManagers = usersByRole(users, "Delivery Manager");
+    const deliveryManagers = usersByDeliveryRole(users, "DM", "Delivery Manager");
     if (!record && users.length) {
       setForm((current) => ({
         ...current,
@@ -623,7 +630,7 @@ export function OpportunityFormPage() {
               <Field label="Delivery Manager">
                 <select value={form.deliveryManagerName} onChange={(event) => setForm({ ...form, deliveryManagerName: event.target.value })} required>
                   <option value="">Select</option>
-                  {usersByRole(users, "Delivery Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
+                  {usersByDeliveryRole(users, "DM", "Delivery Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
                 </select>
               </Field>
             </div>
@@ -721,8 +728,8 @@ export function SowFormPage() {
   }, [accounts]);
 
   useEffect(() => {
-    const projectManagers = usersByRole(users, "Project Manager");
-    const deliveryManagers = usersByRole(users, "Delivery Manager");
+    const projectManagers = usersByDeliveryRole(users, "PM", "Project Manager");
+    const deliveryManagers = usersByDeliveryRole(users, "DM", "Delivery Manager");
     const accountManagers = usersByRole(users, "Account Manager");
     if (!record && users.length) {
       setForm((current) => ({
@@ -839,13 +846,13 @@ export function SowFormPage() {
               <Field label="Project Manager">
                 <select value={form.projectManagerName} onChange={(event) => setForm({ ...form, projectManagerName: event.target.value })} required>
                   <option value="">Select</option>
-                  {usersByRole(users, "Project Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
+                  {usersByDeliveryRole(users, "PM", "Project Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
                 </select>
               </Field>
               <Field label="Delivery Manager">
                 <select value={form.deliveryManagerName} onChange={(event) => setForm({ ...form, deliveryManagerName: event.target.value })} required>
                   <option value="">Select</option>
-                  {usersByRole(users, "Delivery Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
+                  {usersByDeliveryRole(users, "DM", "Delivery Manager").map((user) => <option key={user.id} value={user.name}>{user.name}</option>)}
                 </select>
               </Field>
               <Field label="Account Manager">

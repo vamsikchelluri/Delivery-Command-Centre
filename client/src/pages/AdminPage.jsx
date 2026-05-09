@@ -730,6 +730,7 @@ function getColumns(collection, setEditing) {
       { key: "name", label: "Name" },
       { key: "email", label: "Email" },
       { key: "role", label: "Role" },
+      { key: "deliveryRoles", label: "Delivery Roles", render: (row) => row.deliveryRoles?.join(", ") || "-" },
       editColumn
     ];
   }
@@ -807,6 +808,27 @@ function AdminForm({ collection, record, onClose, onSaved }) {
                   <option key={role.id || role.name} value={role.name}>{role.name}</option>
                 ))}
               </select>
+            ) : collection === "users" && key === "deliveryRoles" ? (
+              <div className="checkbox-stack compact">
+                {["PM", "DM"].map((deliveryRole) => (
+                  <label key={deliveryRole} className="check-row">
+                    <input
+                      type="checkbox"
+                      checked={(form.deliveryRoles || []).includes(deliveryRole)}
+                      onChange={(event) => {
+                        const current = form.deliveryRoles || [];
+                        update(
+                          "deliveryRoles",
+                          event.target.checked
+                            ? [...current, deliveryRole]
+                            : current.filter((item) => item !== deliveryRole)
+                        );
+                      }}
+                    />
+                    <span>{deliveryRole}</span>
+                  </label>
+                ))}
+              </div>
             ) : collection === "locations" && ["defaultCompensationCurrency", "defaultPaymentCurrency"].includes(key) ? (
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
                 <option value="">None</option>
@@ -885,7 +907,7 @@ function normalizeForm(collection, record) {
   if (collection === "systemConfigs") return { key: record.key || "", value: record.value || "", description: record.description || "" };
   if (collection === "numberRanges") return { objectType: record.objectType || "", prefix: record.prefix || "", sequenceLength: String(record.sequenceLength ?? 6), nextNumber: String(record.nextNumber ?? 1), includeYear: String(record.includeYear ?? true), active: String(record.active ?? true) };
   if (collection === "appRoles") return { name: record.name || "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false), active: String(record.active ?? true) };
-  return { number: record.number || "", name: record.name || "", email: record.email || "", role: record.role || "", temporaryPassword: "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false) };
+  return { number: record.number || "", name: record.name || "", email: record.email || "", role: record.role || "", deliveryRoles: record.deliveryRoles || [], temporaryPassword: "", canViewCost: String(record.canViewCost ?? false), canViewMargin: String(record.canViewMargin ?? false) };
 }
 
 function denormalizeForm(collection, form) {
@@ -895,6 +917,6 @@ function denormalizeForm(collection, form) {
   if (collection === "locations") return { ...form, active: form.active === "true" };
   if (collection === "numberRanges") return { ...form, sequenceLength: Number(form.sequenceLength), nextNumber: Number(form.nextNumber), includeYear: form.includeYear === "true", active: form.active === "true" };
   if (collection === "appRoles") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true", active: form.active === "true" };
-  if (collection === "users") return { ...form, canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true" };
+  if (collection === "users") return { ...form, deliveryRoles: form.deliveryRoles || [], canViewCost: form.canViewCost === "true", canViewMargin: form.canViewMargin === "true" };
   return form;
 }

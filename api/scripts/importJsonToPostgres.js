@@ -226,6 +226,7 @@ async function main() {
     email: row.email,
     passwordHash: row.passwordHash,
     role: row.role,
+    deliveryRoles: row.deliveryRoles || [],
     canViewCost: Boolean(row.canViewCost),
     canViewMargin: Boolean(row.canViewMargin),
     createdAt: asDate(row.createdAt),

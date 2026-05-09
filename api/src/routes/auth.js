@@ -54,6 +54,7 @@ router.post("/login", asyncRoute(async (req, res) => {
       name: authorizedUser.name,
       email: authorizedUser.email,
       role: authorizedUser.role,
+      deliveryRoles: authorizedUser.deliveryRoles || [],
       canViewCost: authorizedUser.canViewCost,
       canViewMargin: authorizedUser.canViewMargin,
       permissions: authorizedUser.permissions
@@ -75,6 +76,7 @@ router.get("/me", requireAuth, asyncRoute(async (req, res) => {
     name: authorizedUser.name,
     email: authorizedUser.email,
     role: authorizedUser.role,
+    deliveryRoles: authorizedUser.deliveryRoles || [],
     canViewCost: authorizedUser.canViewCost,
     canViewMargin: authorizedUser.canViewMargin,
     permissions: authorizedUser.permissions

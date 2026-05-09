@@ -82,6 +82,7 @@ model User {
   email         String   @unique
   passwordHash  String
   role          String
+  deliveryRoles String[] @default([])
   canViewCost   Boolean  @default(false)
   canViewMargin Boolean  @default(false)
   createdAt     DateTime @default(now())

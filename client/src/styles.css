@@ -2215,6 +2215,24 @@ textarea {
   white-space: nowrap;
 }
 
+.checkbox-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.checkbox-stack.compact {
+  gap: 0.35rem;
+}
+
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
 .check-list {
   display: grid;
   gap: 0.6rem;
