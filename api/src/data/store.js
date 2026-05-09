@@ -80,6 +80,13 @@ const enumDefaults = {
   }
 };
 
+const nullableStringFields = {
+  sows: ["sourceOpportunityId", "parentSowReference"],
+  sowRoles: ["sourceOpportunityRoleId"],
+  deploymentPlans: ["deploymentId"],
+  auditLogs: ["sourceScreen", "importReference"]
+};
+
 let db = {};
 let initialized = false;
 let writeQueue = Promise.resolve();
@@ -128,6 +135,12 @@ function cleanForPrisma(collection, record) {
     } else if (cleaned[field]) {
       const parsed = new Date(cleaned[field]);
       cleaned[field] = Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+  }
+
+  for (const field of nullableStringFields[collection] || []) {
+    if (cleaned[field] === "") {
+      cleaned[field] = null;
     }
   }
 

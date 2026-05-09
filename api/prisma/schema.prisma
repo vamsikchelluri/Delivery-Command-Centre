@@ -34,6 +34,7 @@ enum OpportunityStage {
 enum SowStatus {
   DRAFT
   ACTIVE
+  INACTIVE
   ON_HOLD
   COMPLETED
   TERMINATED

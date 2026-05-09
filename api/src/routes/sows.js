@@ -132,9 +132,13 @@ router.post("/", async (req, res) => {
 
   const now = new Date().toISOString();
   const grossMargin = parsed.data.visibleRevenue - parsed.data.visibleCost;
+  const payload = {
+    ...parsed.data,
+    sourceOpportunityId: parsed.data.sourceOpportunityId || null
+  };
   const sow = addRecord("sows", {
     id: crypto.randomUUID(),
-    ...parsed.data,
+    ...payload,
     targetMargin: parsed.data.targetMargin ?? sourceOpportunity?.targetMargin ?? 0,
     number: nextDocumentNumber("SOW"),
     startDate: new Date(parsed.data.startDate).toISOString(),
@@ -228,7 +232,7 @@ router.patch("/:id", async (req, res) => {
     travelExpensesNotes: z.string().optional(),
     projectManagerName: z.string().min(2).optional(),
     deliveryManagerName: z.string().min(2).optional(),
-    accountManagerName: z.string().min(2).optional(),
+    accountManagerName: z.string().optional().default(""),
     projectHealth: z.string().optional()
   });
 
@@ -243,6 +247,12 @@ router.patch("/:id", async (req, res) => {
   }
 
   const changes = { ...parsed.data };
+  if (changes.sourceOpportunityId === "") {
+    changes.sourceOpportunityId = null;
+  }
+  if (changes.accountManagerName === undefined) {
+    delete changes.accountManagerName;
+  }
   for (const key of ["startDate", "endDate"]) {
     if (changes[key]) {
       changes[key] = new Date(changes[key]).toISOString();

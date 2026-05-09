@@ -239,7 +239,7 @@ function hydrateDeploymentActuals({ sow, role, deployment, resource, actuals, de
 
 function hydrateRolePlan({ sow, role, deploymentPlans }) {
   const startDate = role.startDate || sow.startDate;
-  const endDate = role.endDate ? (earliestDateValue(role.endDate, sow.endDate) || role.endDate) : sow.endDate;
+  const endDate = role.endDate || sow.endDate;
   const monthRows = monthsBetween(startDate, endDate).map((month) => {
     const monthId = monthKey(month);
     const rolePlan = deploymentPlans.find((item) =>
