@@ -31,9 +31,9 @@ export function SowsPage() {
     return matchesSearch && matchesStatus && matchesBilling && matchesDm;
   });
   const activeCount = filtered.filter((item) => item.status === "ACTIVE").length;
-  const visibleRevenue = filtered.reduce((sum, item) => sum + Number(item.visibleRevenue || 0), 0);
-  const visibleCost = filtered.reduce((sum, item) => sum + Number(item.visibleCost || 0), 0);
-  const grossMargin = visibleRevenue - visibleCost;
+  const contractValue = filtered.reduce((sum, item) => sum + Number(item.contractValue || 0), 0);
+  const tmCount = filtered.filter((item) => item.billingModel === "TM_HOURLY").length;
+  const fixedBidCount = filtered.filter((item) => item.billingModel === "FIXED_BID").length;
 
   return (
     <div className="workspace">
@@ -61,9 +61,9 @@ export function SowsPage() {
       />
       <div className="stats-grid register-kpi-row">
         <StatCard label="Active SOWs" value={activeCount} />
-        <StatCard label="Visible Revenue" value={`$${visibleRevenue.toLocaleString()}`} />
-        <StatCard label="Visible Cost" value={`$${visibleCost.toLocaleString()}`} />
-        <StatCard label="Gross Margin" value={`$${grossMargin.toLocaleString()}`} />
+        <StatCard label="Contract Value" value={`$${contractValue.toLocaleString()}`} />
+        <StatCard label="T&M SOWs" value={tmCount} />
+        <StatCard label="Fixed Bid SOWs" value={fixedBidCount} />
       </div>
       <Section title="SOW Register">
         {isLoading ? (
@@ -78,20 +78,6 @@ export function SowsPage() {
               { key: "status", label: "Status" },
               { key: "projectHealth", label: "Health" },
               { key: "contractValue", label: "Contract Value", render: (row) => `$${row.contractValue.toLocaleString()}` },
-              { key: "visibleRevenue", label: "Visible Revenue", render: (row) => `$${row.visibleRevenue.toLocaleString()}` },
-              { key: "visibleCost", label: "Visible Cost", render: (row) => `$${row.visibleCost.toLocaleString()}` },
-              { key: "grossMarginPercent", label: "Margin %", render: (row) => `${row.grossMarginPercent}%` },
-              {
-                key: "assignedResources",
-                label: "Assigned Resources",
-                render: (row) => {
-                  const names = (row.roles || [])
-                    .flatMap((role) => role.deployments || [])
-                    .map((deployment) => `${deployment.resource?.firstName || ""} ${deployment.resource?.lastName || ""}`.trim())
-                    .filter(Boolean);
-                  return names.length ? [...new Set(names)].join(", ") : "-";
-                }
-              },
               { key: "deliveryManagerName", label: "DM" },
               { key: "projectManagerName", label: "PM" },
               {

@@ -346,7 +346,7 @@ router.get("/", (req, res) => {
           label: "Margin Health",
           value: summary.actualMarginPercent,
           displayValue: `${summary.actualMarginPercent.toFixed(1)}%`,
-          caption: `Actual GM% vs planned ${marginTarget.toFixed(1)}%`,
+          caption: `Actual GM% vs actualized-month planned ${marginTarget.toFixed(1)}%`,
           detailLabel: "Open margin drilldown",
           status: statusFor(summary.actualMarginPercent, { green: marginTarget, amber: marginTarget - 5 })
         },
