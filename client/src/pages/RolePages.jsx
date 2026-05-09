@@ -441,9 +441,10 @@ export function SowRoleFormPage() {
 
   async function save(event) {
     event.preventDefault();
+    const { staffingStatus: _staffingStatus, ...rolePayload } = form;
     const savedRole = isEdit
-      ? await patchJson(`/children/sowRoles/${roleId}`, form)
-      : await postJson("/children/sowRoles", form);
+      ? await patchJson(`/children/sowRoles/${roleId}`, rolePayload)
+      : await postJson("/children/sowRoles", rolePayload);
 
     if (assignedResourceId) {
       const resource = resources.find((item) => item.id === assignedResourceId);
@@ -571,13 +572,6 @@ export function SowRoleFormPage() {
                 <Field label="Target Margin %"><input type="number" step="any" min="0" max="100" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
                 <Field label="Loaded Cost Guidance"><input value={form.loadedCostGuidance} readOnly /></Field>
                 <Field label="Base Cost Guidance"><input value={form.baseCostGuidance} readOnly /></Field>
-                <Field label="Staffing Status">
-                  <select value={form.staffingStatus} onChange={(event) => setForm({ ...form, staffingStatus: event.target.value })}>
-                    <option value="Open">Open</option>
-                    <option value="Partially Staffed">Partially Staffed</option>
-                    <option value="Fully Staffed">Fully Staffed</option>
-                  </select>
-                </Field>
                 <Field label="Remarks"><textarea rows="3" value={form.remarks} onChange={(event) => setForm({ ...form, remarks: event.target.value })} /></Field>
               </div>
             </Section>

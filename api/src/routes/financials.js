@@ -190,6 +190,7 @@ router.get("/", (req, res) => {
 
   const scopedSows = sows
     .filter((sow) => matchesScope(sow, req.user))
+    .filter((sow) => sow.status === "ACTIVE")
     .filter((sow) => matchesFilters(sow, accountsById.get(sow.accountId), req.query));
   const scopedSowIds = new Set(scopedSows.map((sow) => sow.id));
   const scopedRoleIds = new Set(roles.filter((role) => scopedSowIds.has(role.sowId)).map((role) => role.id));
@@ -201,11 +202,8 @@ router.get("/", (req, res) => {
   const actualRows = actuals
     .map((actual) => actualRow(actual, { rolesById, deploymentsById, resourcesById }))
     .filter((row) => row && scopedDeploymentIds.has(row.deploymentId) && monthInRange(row.month, req.query));
-  const actualMonthKeys = new Set(actualRows.map((row) => `${row.sowId}:${row.month}`));
-  const plannedToActualMonths = plannedRows.filter((row) => actualMonthKeys.has(`${row.sowId}:${row.month}`));
-
   const summary = finalizeTotals([
-    ...plannedToActualMonths,
+    ...plannedRows,
     ...actualRows
   ].reduce((totals, row) => addFinancials(totals, row), emptyTotals("portfolio")));
 
@@ -234,7 +232,7 @@ router.get("/", (req, res) => {
       status: sow.status
     });
   });
-  plannedToActualMonths.forEach((row) => {
+  plannedRows.forEach((row) => {
     const sow = sows.find((item) => item.id === row.sowId);
     const account = accountsById.get(sow?.accountId);
     addFinancials(sowMap.get(row.sowId), row);
