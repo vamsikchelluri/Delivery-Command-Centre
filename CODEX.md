@@ -128,8 +128,9 @@
 - Industry is now an Admin-maintained master and is used as a Client dropdown.
 - Admin access is permission-driven through `admin:view` or `masterData:view`, not hardcoded to named roles.
 - Reports now use a dedicated `reports` permission instead of piggybacking on Financial Cockpit access.
-- Railway startup now runs `prisma migrate deploy` before the API starts; new master-data tables are covered by a Prisma migration.
+- Railway startup now runs `prisma db push` before the API starts because the current Railway database was created before Prisma Migrate was baselined.
 - Startup reconciliation inserts missing default permission features, role permissions, master values, FX rates, and system configs without overwriting existing live records.
+- Deployment note: the Railway Postgres database was originally created outside Prisma Migrate, so startup currently uses `prisma db push` before API start to sync additive schema changes without destructive data loss. A future production hardening step should baseline the existing schema into Prisma Migrate before switching back to `migrate deploy`.
 - Resource Planning is a new read-only top-level report for future staffing. It includes opportunity roles with probability `>= 70%`, opportunities in `SOW` stage, won opportunities not yet converted to SOW, and open/partially staffed SOW roles.
 - Opportunity pipeline now supports `SOW` stage with a default probability of `90%`; probability remains editable.
 - Resource Planning matches demand to active resources by SAP module for MVP and excludes resources that are exited, terminated, inactive, sabbatical, or on leave from available supply.
