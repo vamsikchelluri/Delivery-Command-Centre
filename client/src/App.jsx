@@ -113,8 +113,9 @@ function Shell() {
           <button
             className="secondary-button"
             onClick={() => {
-              localStorage.clear();
-              window.location.reload();
+              localStorage.removeItem("dcc-token");
+              localStorage.removeItem("dcc-user");
+              window.location.replace("/");
             }}
           >
             Sign out
