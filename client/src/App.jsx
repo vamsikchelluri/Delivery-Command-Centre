@@ -80,6 +80,7 @@ function Shell() {
     { to: "/resource-planning", label: "Resource Planning", allowed: can(user, "resourcePlanning", "view") },
     { to: "/financials", label: "Financial Cockpit", allowed: can(user, "financialCockpit", "view") },
     { to: "/reports", label: "Reports", allowed: can(user, "financialCockpit", "view") },
+    { to: "/reports/resource-profitability", label: "Resource Profitability", allowed: can(user, "financialCockpit", "view"), child: true },
     { to: "/admin", label: "Admin", allowed: isPlatformAdmin(user) }
   ].filter((item) => item.allowed);
 
@@ -92,7 +93,7 @@ function Shell() {
         </div>
         <nav className="nav-list">
           {navItems.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.to === "/"} className="nav-link">
+            <NavLink key={item.to} to={item.to} end={item.to === "/" || item.child} className={`nav-link${item.child ? " nav-sublink" : ""}`}>
               {item.label}
             </NavLink>
           ))}
@@ -147,6 +148,7 @@ function Shell() {
             <Route path="/resource-planning" element={<RequireAccess user={user} feature="resourcePlanning"><ResourcePlanningPage /></RequireAccess>} />
             <Route path="/financials" element={<RequireAccess user={user} feature="financialCockpit"><FinancialCockpitPage /></RequireAccess>} />
             <Route path="/reports" element={<RequireAccess user={user} feature="financialCockpit"><ReportsPage /></RequireAccess>} />
+            <Route path="/reports/resource-profitability" element={<RequireAccess user={user} feature="financialCockpit"><ReportsPage /></RequireAccess>} />
             <Route path="/admin" element={<RequireAccess user={user} platformAdmin><AdminPage /></RequireAccess>} />
           </Routes>
         </ErrorBoundary>
