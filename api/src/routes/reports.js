@@ -97,6 +97,8 @@ function isFullTimeEngagement(value) {
 
 function defaultDateRange(sows, deployments, actuals) {
   const sowStartDates = sows.map((sow) => sow.startDate).filter(Boolean).sort();
+  const deploymentStartDates = deployments.map((deployment) => deployment.startDate).filter(Boolean).sort();
+  const deploymentEndDates = deployments.map((deployment) => deployment.endDate).filter(Boolean).sort();
   const deploymentIds = new Set(deployments.map((deployment) => deployment.id));
   const actualMonthEnds = actuals
     .filter((actual) => deploymentIds.has(actual.deploymentId))
@@ -104,9 +106,17 @@ function defaultDateRange(sows, deployments, actuals) {
     .filter(Boolean)
     .sort();
   const fallbackEndDates = sows.map((sow) => sow.endDate).filter(Boolean).sort();
+  const dateFrom = dateKey(deploymentStartDates[0] || sowStartDates[0]);
+  const dateTo = dateKey(actualMonthEnds.at(-1) || deploymentEndDates.at(-1) || fallbackEndDates.at(-1));
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    return {
+      dateFrom: dateKey(deploymentStartDates[0] || sowStartDates[0]),
+      dateTo: dateKey(deploymentEndDates.at(-1) || fallbackEndDates.at(-1) || dateFrom)
+    };
+  }
   return {
-    dateFrom: dateKey(sowStartDates[0]),
-    dateTo: dateKey(actualMonthEnds.at(-1) || fallbackEndDates.at(-1))
+    dateFrom,
+    dateTo
   };
 }
 
