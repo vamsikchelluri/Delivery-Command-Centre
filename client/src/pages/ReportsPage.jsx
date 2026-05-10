@@ -153,8 +153,9 @@ export function ReportsPage() {
       </section>
 
       <div className="report-definition-strip">
-        <span>Planned Billing Uplift = max(Planned Hours - Actual Hours, 0) x Bill Rate.</span>
+        <span>Planned Billing Uplift = max(Planned Hours - Actual Hours, 0) x Bill Rate, excluding Full-Time resources.</span>
         <span>Total Billed = Actual Revenue + Planned Billing Uplift.</span>
+        <span>Full-Time cost remains Estimated Cost Rate x Actual Hours for now.</span>
       </div>
 
       <Section title="Resource Profitability">

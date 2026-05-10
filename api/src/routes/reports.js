@@ -91,6 +91,10 @@ function selectedSet(value) {
   return new Set(String(value || "").split(",").map((item) => item.trim()).filter(Boolean));
 }
 
+function isFullTimeEngagement(value) {
+  return String(value || "").trim().toLowerCase() === "full-time";
+}
+
 function defaultDateRange(sows, deployments, actuals) {
   const sowStartDates = sows.map((sow) => sow.startDate).filter(Boolean).sort();
   const deploymentIds = new Set(deployments.map((deployment) => deployment.id));
@@ -244,7 +248,8 @@ async function resourceProfitabilityPayload(query) {
       const costBasisAmountHourlyUsd = row._basisHours ? row._weightedCostBasisAmountHourlyUsd / row._basisHours : row.costBasisAmountHourlyUsd;
       const overheadAmountPerHour = row._basisHours ? row._weightedOverheadAmountPerHour / row._basisHours : row.overheadAmountPerHour;
       const ptoFixedBidHours = Math.max(row.plannedHours - row.actualHours, 0);
-      const profitFromPtoFixedBid = ptoFixedBidHours * billRate;
+      const plannedBillingUpliftHours = isFullTimeEngagement(row.engagementType) ? 0 : ptoFixedBidHours;
+      const profitFromPtoFixedBid = plannedBillingUpliftHours * billRate;
       const revenue = row.actualHours * billRate;
       const totalCost = row.actualHours * estimatedCostRate;
       const profit = revenue - totalCost;
@@ -262,7 +267,7 @@ async function resourceProfitabilityPayload(query) {
         estimatedCostRate: round(estimatedCostRate),
         totalCost: round(totalCost),
         profit: round(profit),
-        ptoFixedBidHours: round(ptoFixedBidHours),
+        ptoFixedBidHours: round(plannedBillingUpliftHours),
         profitFromPtoFixedBid: round(profitFromPtoFixedBid),
         totalRevenueBilledToCustomer: round(totalRevenueBilledToCustomer),
         marginPercent: round(marginPercent)
