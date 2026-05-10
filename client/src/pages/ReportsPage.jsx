@@ -54,6 +54,7 @@ export function ReportsPage() {
   const filterOptions = data?.filters || {};
   const rows = data?.rows || [];
   const totals = data?.totals || {};
+  const diagnostics = data?.diagnostics || {};
   const selectedSowLabels = (filterOptions.sows || [])
     .filter((sow) => filters.sowIds.includes(sow.id))
     .map((sow) => sow.number);
@@ -163,6 +164,21 @@ export function ReportsPage() {
           <div className="loading">Loading report...</div>
         ) : error ? (
           <div className="error-banner">{error.message}</div>
+        ) : !rows.length ? (
+          <div className="empty-state">
+            <strong>No rows match the current report scope.</strong>
+            <p>
+              Included SOWs: {diagnostics.includedSows ?? 0} / {diagnostics.totalSows ?? 0};
+              roles: {diagnostics.scopedRoles ?? 0};
+              deployments: {diagnostics.scopedDeployments ?? 0};
+              resources: {diagnostics.resources ?? 0}.
+            </p>
+            <p>
+              Skipped deployments: missing role {diagnostics.skippedDeployments?.missingRole ?? 0},
+              missing SOW {diagnostics.skippedDeployments?.missingSow ?? 0},
+              missing resource {diagnostics.skippedDeployments?.missingResource ?? 0}.
+            </p>
+          </div>
         ) : (
           <DataTable
             columns={[

@@ -6,6 +6,18 @@ import { standardManMonthHours } from "../lib/masterSettings.js";
 const router = Router();
 const INCLUDED_SOW_STATUSES = new Set(["ACTIVE", "COMPLETED"]);
 
+function normalizedCode(value) {
+  return String(value || "").trim().toUpperCase().replace(/\s+/g, "_").replace(/-/g, "_");
+}
+
+function isIncludedSowStatus(value) {
+  return INCLUDED_SOW_STATUSES.has(normalizedCode(value));
+}
+
+function isCancelledDeployment(value) {
+  return normalizedCode(value) === "CANCELLED";
+}
+
 function monthKey(value) {
   return String(value || "").slice(0, 7);
 }
@@ -133,9 +145,10 @@ function buildFilterOptions(sows, accounts) {
 
 async function resourceProfitabilityPayload(query) {
   const accounts = getCollection("accounts");
-  const sows = getCollection("sows").filter((sow) => INCLUDED_SOW_STATUSES.has(sow.status));
+  const allSows = getCollection("sows");
+  const sows = allSows.filter((sow) => isIncludedSowStatus(sow.status));
   const roles = getCollection("sowRoles");
-  const deployments = getCollection("deployments").filter((deployment) => deployment.status !== "CANCELLED");
+  const deployments = getCollection("deployments").filter((deployment) => !isCancelledDeployment(deployment.status));
   const resources = getCollection("resources");
   const actuals = getCollection("actuals");
   const deploymentPlans = getCollection("deploymentPlans");
@@ -159,6 +172,21 @@ async function resourceProfitabilityPayload(query) {
   const dateTo = query.dateTo || defaults.dateTo;
 
   const rowMap = new Map();
+  const diagnostics = {
+    totalSows: allSows.length,
+    includedSows: sows.length,
+    scopedSows: initialScopedSows.length,
+    scopedRoles: initialScopedRoleIds.size,
+    scopedDeployments: initialScopedDeployments.length,
+    resources: resources.length,
+    actuals: actuals.length,
+    deploymentPlans: deploymentPlans.length,
+    skippedDeployments: {
+      missingRole: 0,
+      missingSow: 0,
+      missingResource: 0
+    }
+  };
 
   function ensureRow(sow, deployment, role, resource) {
     const account = accountsById.get(sow.accountId);
@@ -211,7 +239,18 @@ async function resourceProfitabilityPayload(query) {
     const role = rolesById.get(deployment.sowRoleId);
     const sow = initialScopedSows.find((item) => item.id === role?.sowId);
     const resource = resourcesById.get(deployment.resourceId);
-    if (!role || !sow || !resource) continue;
+    if (!role) {
+      diagnostics.skippedDeployments.missingRole += 1;
+      continue;
+    }
+    if (!sow) {
+      diagnostics.skippedDeployments.missingSow += 1;
+      continue;
+    }
+    if (!resource) {
+      diagnostics.skippedDeployments.missingResource += 1;
+      continue;
+    }
 
     const row = ensureRow(sow, deployment, role, resource);
     const effectiveStartDate = effectiveDeploymentStart(deployment, role, sow);
@@ -325,7 +364,8 @@ async function resourceProfitabilityPayload(query) {
       sowIds: [...selectedSowIds]
     },
     totals,
-    rows
+    rows,
+    diagnostics
   };
 }
 
