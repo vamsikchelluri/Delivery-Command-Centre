@@ -6,11 +6,22 @@ import { DataTable, PageHeaderCard, Section, StatCard } from "../components.jsx"
 function money(value) {
   const number = Number(value || 0);
   const prefix = number < 0 ? "-$" : "$";
-  return `${prefix}${Math.abs(number).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+  return `${prefix}${Math.abs(number).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function hours(value) {
-  return Number(value || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function percent(value) {
+  return `${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+}
+
+function formatDate(value) {
+  if (!value) return "All";
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
 }
 
 function queryFromFilters(filters) {
@@ -42,6 +53,17 @@ export function ReportsPage() {
   const filterOptions = data?.filters || {};
   const rows = data?.rows || [];
   const totals = data?.totals || {};
+  const selectedSowLabels = (filterOptions.sows || [])
+    .filter((sow) => filters.sowIds.includes(sow.id))
+    .map((sow) => sow.number);
+  const criteria = [
+    { label: "Date Range", value: `${formatDate(effectiveFilters.dateFrom)} to ${formatDate(effectiveFilters.dateTo)}` },
+    { label: "Client", value: filters.client || "All Clients" },
+    { label: "Delivery Manager", value: filters.deliveryManager || "All DMs" },
+    { label: "SOW", value: selectedSowLabels.length ? selectedSowLabels.join(", ") : "All SOWs" },
+    { label: "SOW Status", value: (effectiveFilters.includedStatuses || []).join(", ") || "ACTIVE, COMPLETED" },
+    { label: "Rows", value: rows.length.toLocaleString("en-US") }
+  ];
 
   function updateFilter(key, value) {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -91,13 +113,29 @@ export function ReportsPage() {
 
       {exportError ? <div className="error-banner">{exportError}</div> : null}
 
-      <div className="stats-grid register-kpi-row">
-        <StatCard label="Planned Hours" value={hours(totals.plannedHours)} />
-        <StatCard label="Actual Hours" value={hours(totals.actualHours)} />
-        <StatCard label="Revenue" value={money(totals.revenue)} />
-        <StatCard label="Total Cost" value={money(totals.totalCost)} />
-        <StatCard label="Profit" value={money(totals.profit)} />
-        <StatCard label="Total Billed" value={money(totals.totalRevenueBilledToCustomer)} />
+      <section className="report-summary-panel">
+        <div className="report-criteria">
+          {criteria.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </div>
+        <div className="stats-grid register-kpi-row report-kpi-row">
+          <StatCard label="Planned Hours" value={hours(totals.plannedHours)} />
+          <StatCard label="Actual Hours" value={hours(totals.actualHours)} />
+          <StatCard label="Revenue" value={money(totals.revenue)} />
+          <StatCard label="Total Cost" value={money(totals.totalCost)} />
+          <StatCard label="Profit" value={money(totals.profit)} />
+          <StatCard label="Total Billed" value={money(totals.totalRevenueBilledToCustomer)} />
+          <StatCard label="Margin %" value={percent(totals.marginPercent)} />
+        </div>
+      </section>
+
+      <div className="report-definition-strip">
+        <span>Planned Billing Uplift = max(Planned Hours - Actual Hours, 0) x Bill Rate.</span>
+        <span>Total Billed = Actual Revenue + Planned Billing Uplift.</span>
       </div>
 
       <Section title="Resource Profitability">
@@ -108,23 +146,25 @@ export function ReportsPage() {
         ) : (
           <DataTable
             columns={[
+              { key: "clientName", label: "Client" },
+              { key: "sowNumber", label: "SOW" },
               { key: "candidateFirstName", label: "First Name" },
               { key: "candidateLastName", label: "Last Name" },
               { key: "engagementType", label: "Engagement Type" },
+              { key: "resourceStartDate", label: "Start", render: (row) => formatDate(row.resourceStartDate) },
+              { key: "resourceEndDate", label: "End", render: (row) => formatDate(row.resourceEndDate) },
               { key: "plannedHours", label: "Planned Hours", render: (row) => hours(row.plannedHours) },
               { key: "actualHours", label: "Actual Hours", render: (row) => hours(row.actualHours) },
               { key: "billRate", label: "Bill Rate", render: (row) => money(row.billRate) },
-              { key: "revenue", label: "Revenue", render: (row) => money(row.revenue) },
+              { key: "revenue", label: "Actual Revenue", render: (row) => money(row.revenue) },
+              { key: "profitFromPtoFixedBid", label: "Planned Billing Uplift", render: (row) => money(row.profitFromPtoFixedBid) },
+              { key: "totalRevenueBilledToCustomer", label: "Total Billed", render: (row) => money(row.totalRevenueBilledToCustomer) },
               { key: "costBasisAmountHourlyUsd", label: "Cost Basis /hr USD", render: (row) => money(row.costBasisAmountHourlyUsd) },
-              { key: "overhead", label: "Overhead" },
+              { key: "overheadAmountPerHour", label: "Overhead /hr", render: (row) => money(row.overheadAmountPerHour) },
               { key: "estimatedCostRate", label: "Estimated Cost Rate", render: (row) => money(row.estimatedCostRate) },
               { key: "totalCost", label: "Total Cost", render: (row) => money(row.totalCost) },
               { key: "profit", label: "Profit", render: (row) => money(row.profit) },
-              { key: "profitFromPtoFixedBid", label: "Profit from PTO / Fixed Bid", render: (row) => money(row.profitFromPtoFixedBid) },
-              { key: "totalRevenueBilledToCustomer", label: "Total Revenue Billed", render: (row) => money(row.totalRevenueBilledToCustomer) },
-              { key: "sowNumber", label: "SOW Number" },
-              { key: "resourceStartDate", label: "Resource Start Date" },
-              { key: "resourceEndDate", label: "Resource End Date" }
+              { key: "marginPercent", label: "Margin %", render: (row) => percent(row.marginPercent) }
             ]}
             rows={rows}
           />

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { getCollection } from "../data/store.js";
-import { findOverheadRule, getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
+import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
 
 const router = Router();
 const STANDARD_MONTH_HOURS = 168;
@@ -25,6 +25,14 @@ function monthEnd(value) {
 
 function dateKey(value) {
   return value ? String(value).slice(0, 10) : "";
+}
+
+function latestDateKey(...values) {
+  return values.map(dateKey).filter(Boolean).sort().at(-1) || "";
+}
+
+function earliestDateKey(...values) {
+  return values.map(dateKey).filter(Boolean).sort()[0] || "";
 }
 
 function monthsBetween(startValue, endValue) {
@@ -71,13 +79,6 @@ function csvEscape(value) {
   return text;
 }
 
-function overheadLabel(rule) {
-  if (!rule) return "";
-  const percent = Number(rule.overheadPercent || 0);
-  const hourlyAddOn = Number(rule.hourlyAddOn || 0);
-  return `${percent}% + $${hourlyAddOn}/hr`;
-}
-
 function selectedSet(value) {
   return new Set(String(value || "").split(",").map((item) => item.trim()).filter(Boolean));
 }
@@ -121,7 +122,6 @@ async function resourceProfitabilityPayload(query) {
   const accountsById = new Map(accounts.map((account) => [account.id, account]));
   const rolesById = new Map(roles.map((role) => [role.id, role]));
   const resourcesById = new Map(resources.map((resource) => [resource.id, resource]));
-  const deploymentsById = new Map(deployments.map((deployment) => [deployment.id, deployment]));
   const selectedSowIds = selectedSet(query.sowIds);
 
   const initialScopedSows = sows.filter((sow) =>
@@ -151,7 +151,7 @@ async function resourceProfitabilityPayload(query) {
       billRate: 0,
       revenue: 0,
       costBasisAmountHourlyUsd: 0,
-      overhead: "",
+      overheadAmountPerHour: 0,
       estimatedCostRate: Number(resource.costRate || role.costRate || role.loadedCostGuidance || 0),
       totalCost: 0,
       profit: 0,
@@ -169,11 +169,12 @@ async function resourceProfitabilityPayload(query) {
       _costRateHours: 0,
       _basisHours: 0,
       _weightedEstimatedCostRate: 0,
-      _weightedCostBasisAmountHourlyUsd: 0
+      _weightedCostBasisAmountHourlyUsd: 0,
+      _weightedOverheadAmountPerHour: 0
     };
 
-    const start = dateKey(deployment.startDate);
-    const end = dateKey(deployment.endDate);
+    const start = latestDateKey(deployment.startDate, role.startDate, sow.startDate);
+    const end = earliestDateKey(deployment.endDate, role.endDate, sow.endDate);
     if (!existing.resourceStartDate || (start && start < existing.resourceStartDate)) {
       existing.resourceStartDate = start;
     }
@@ -191,13 +192,19 @@ async function resourceProfitabilityPayload(query) {
     if (!role || !sow || !resource) continue;
 
     const row = ensureRow(sow, deployment, role, resource);
-    const effectiveMonths = overlapMonthRange(deployment.startDate || role.startDate || sow.startDate, deployment.endDate || role.endDate || sow.endDate, dateFrom, dateTo);
-    const actualRows = actuals.filter((actual) => actual.deploymentId === deployment.id && monthInRange(actual.month, dateFrom, dateTo));
+    const effectiveStartDate = latestDateKey(deployment.startDate, role.startDate, sow.startDate);
+    const effectiveEndDate = earliestDateKey(deployment.endDate, role.endDate, sow.endDate);
+    const effectiveMonths = overlapMonthRange(effectiveStartDate, effectiveEndDate, dateFrom, dateTo);
+    const actualRows = actuals.filter((actual) =>
+      actual.deploymentId === deployment.id &&
+      monthInRange(actual.month, dateFrom, dateTo) &&
+      monthInRange(actual.month, effectiveStartDate, effectiveEndDate)
+    );
     const actualHours = actualRows.reduce((sum, actual) => sum + quantityToHours(actual.actualQuantity, actual.actualUnit || role.measurementUnit || "HOURS"), 0);
     const billRate = Number(role.billRate || deployment.lockedBillRate || 0);
     const estimatedCostRate = Number(resource.costRate || deployment.lockedCostRate || role.costRate || role.loadedCostGuidance || 0);
-    const rule = findOverheadRule(overheadRules, resource.employmentType || role.engagementType, resource.locationType || role.locationRequirement);
     const costBasisAmountHourlyUsd = removeOverheadFromLoadedCost(estimatedCostRate, overheadRules, resource.employmentType || role.engagementType, resource.locationType || role.locationRequirement);
+    const overheadAmountPerHour = Math.max(0, estimatedCostRate - costBasisAmountHourlyUsd);
 
     let plannedHours = 0;
     for (const month of effectiveMonths) {
@@ -219,7 +226,7 @@ async function resourceProfitabilityPayload(query) {
     row._weightedEstimatedCostRate += estimatedCostRate * (actualHours || plannedHours);
     row._basisHours += actualHours || plannedHours;
     row._weightedCostBasisAmountHourlyUsd += costBasisAmountHourlyUsd * (actualHours || plannedHours);
-    row.overhead = row.overhead || overheadLabel(rule);
+    row._weightedOverheadAmountPerHour += overheadAmountPerHour * (actualHours || plannedHours);
   }
 
   const rows = [...rowMap.values()]
@@ -227,12 +234,15 @@ async function resourceProfitabilityPayload(query) {
       const billRate = row._billRateHours ? row.billRate / row._billRateHours : row.billRate;
       const estimatedCostRate = row._costRateHours ? row._weightedEstimatedCostRate / row._costRateHours : row.estimatedCostRate;
       const costBasisAmountHourlyUsd = row._basisHours ? row._weightedCostBasisAmountHourlyUsd / row._basisHours : row.costBasisAmountHourlyUsd;
+      const overheadAmountPerHour = row._basisHours ? row._weightedOverheadAmountPerHour / row._basisHours : row.overheadAmountPerHour;
       const ptoFixedBidHours = Math.max(row.plannedHours - row.actualHours, 0);
       const profitFromPtoFixedBid = ptoFixedBidHours * billRate;
       const revenue = row.actualHours * billRate;
       const totalCost = row.actualHours * estimatedCostRate;
       const profit = revenue - totalCost;
-      const { _billRateHours, _costRateHours, _basisHours, _weightedEstimatedCostRate, _weightedCostBasisAmountHourlyUsd, ...clean } = row;
+      const totalRevenueBilledToCustomer = revenue + profitFromPtoFixedBid;
+      const marginPercent = totalRevenueBilledToCustomer ? (profit + profitFromPtoFixedBid) / totalRevenueBilledToCustomer * 100 : 0;
+      const { _billRateHours, _costRateHours, _basisHours, _weightedEstimatedCostRate, _weightedCostBasisAmountHourlyUsd, _weightedOverheadAmountPerHour, ...clean } = row;
       return {
         ...clean,
         plannedHours: round(row.plannedHours),
@@ -240,12 +250,14 @@ async function resourceProfitabilityPayload(query) {
         billRate: round(billRate),
         revenue: round(revenue),
         costBasisAmountHourlyUsd: round(costBasisAmountHourlyUsd),
+        overheadAmountPerHour: round(overheadAmountPerHour),
         estimatedCostRate: round(estimatedCostRate),
         totalCost: round(totalCost),
         profit: round(profit),
         ptoFixedBidHours: round(ptoFixedBidHours),
         profitFromPtoFixedBid: round(profitFromPtoFixedBid),
-        totalRevenueBilledToCustomer: round(revenue + profitFromPtoFixedBid)
+        totalRevenueBilledToCustomer: round(totalRevenueBilledToCustomer),
+        marginPercent: round(marginPercent)
       };
     })
     .filter((row) => row.plannedHours || row.actualHours)
@@ -275,13 +287,19 @@ async function resourceProfitabilityPayload(query) {
   Object.keys(totals).forEach((key) => {
     totals[key] = round(totals[key]);
   });
+  totals.marginPercent = totals.totalRevenueBilledToCustomer
+    ? round(((totals.profit + totals.profitFromPtoFixedBid) / totals.totalRevenueBilledToCustomer) * 100)
+    : 0;
 
   return {
     filters: buildFilterOptions(sows, accounts),
     scope: {
       dateFrom,
       dateTo,
-      includedStatuses: [...INCLUDED_SOW_STATUSES]
+      includedStatuses: [...INCLUDED_SOW_STATUSES],
+      client: query.client || "",
+      deliveryManager: query.deliveryManager || "",
+      sowIds: [...selectedSowIds]
     },
     totals,
     rows
@@ -303,20 +321,32 @@ router.get("/resource-profitability.csv", async (req, res) => {
     ["billRate", "Bill Rate"],
     ["revenue", "Revenue"],
     ["costBasisAmountHourlyUsd", "Cost Basis Amount in /hr USD"],
-    ["overhead", "Overhead"],
+    ["overheadAmountPerHour", "Overhead /hr"],
     ["estimatedCostRate", "Estimated Cost Rate"],
     ["totalCost", "Total Cost"],
     ["profit", "Profit"],
     ["ptoFixedBidHours", "PTO / Fixed Bid Hours"],
-    ["profitFromPtoFixedBid", "Profit from PTO / Fixed Bid"],
+    ["profitFromPtoFixedBid", "Planned Billing Uplift"],
     ["totalRevenueBilledToCustomer", "Total Revenue Billed to Customer"],
+    ["marginPercent", "Margin %"],
     ["sowNumber", "SOW Number"],
     ["resourceStartDate", "Resource Start Date"],
     ["resourceEndDate", "Resource End Date"],
     ["clientName", "Client"],
     ["deliveryManagerName", "Delivery Manager"]
   ];
+  const criteriaRows = [
+    ["Resource Profitability Report"],
+    ["Date From", payload.scope.dateFrom],
+    ["Date To", payload.scope.dateTo],
+    ["Client", payload.scope.client || "All Clients"],
+    ["Delivery Manager", payload.scope.deliveryManager || "All DMs"],
+    ["SOW Count Selected", payload.scope.sowIds.length || "All SOWs"],
+    ["Included SOW Statuses", payload.scope.includedStatuses.join(", ")],
+    []
+  ];
   const csv = [
+    ...criteriaRows.map((row) => row.map(csvEscape).join(",")),
     columns.map(([, label]) => csvEscape(label)).join(","),
     ...payload.rows.map((row) => columns.map(([key]) => csvEscape(row[key])).join(","))
   ].join("\n");

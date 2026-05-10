@@ -481,6 +481,68 @@ textarea {
   padding: 0.35rem 0.5rem;
 }
 
+.report-summary-panel {
+  display: grid;
+  gap: 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(90deg, rgba(7, 95, 115, 0.05), transparent 46%),
+    #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+
+.report-criteria {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.report-criteria div {
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+.report-criteria span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-criteria strong {
+  display: block;
+  margin-top: 0.22rem;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-kpi-row {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.report-definition-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.9rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #bfd8e5;
+  border-radius: var(--radius);
+  background: #f3f9fc;
+  color: #31566a;
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
 .financial-filter-grid label {
   display: grid;
   gap: 0.18rem;
