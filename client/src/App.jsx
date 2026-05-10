@@ -15,6 +15,7 @@ import { SowWorkspacePage } from "./pages/SowWorkspacePage.jsx";
 import { ActualsWorkbenchPage, SowActualsDetailPage } from "./pages/ActualsWorkbenchPage.jsx";
 import { ResourcePlanningPage } from "./pages/ResourcePlanningPage.jsx";
 import { FinancialCockpitPage } from "./pages/FinancialCockpitPage.jsx";
+import { ReportsPage } from "./pages/ReportsPage.jsx";
 import { AdminPage } from "./pages/AdminPage.jsx";
 import { AccountFormPage, OpportunityFormPage, ResourceFormPage, SowFormPage } from "./pages/FormPages.jsx";
 import { OpportunityRoleFormPage, SowRoleFormPage } from "./pages/RolePages.jsx";
@@ -78,6 +79,7 @@ function Shell() {
     { to: "/actuals", label: "Actuals", allowed: can(user, "actuals", "view") },
     { to: "/resource-planning", label: "Resource Planning", allowed: can(user, "resourcePlanning", "view") },
     { to: "/financials", label: "Financial Cockpit", allowed: can(user, "financialCockpit", "view") },
+    { to: "/reports", label: "Reports", allowed: can(user, "financialCockpit", "view") },
     { to: "/admin", label: "Admin", allowed: isPlatformAdmin(user) }
   ].filter((item) => item.allowed);
 
@@ -144,6 +146,7 @@ function Shell() {
             <Route path="/actuals/:id" element={<RequireAccess user={user} feature="actuals"><SowActualsDetailPage /></RequireAccess>} />
             <Route path="/resource-planning" element={<RequireAccess user={user} feature="resourcePlanning"><ResourcePlanningPage /></RequireAccess>} />
             <Route path="/financials" element={<RequireAccess user={user} feature="financialCockpit"><FinancialCockpitPage /></RequireAccess>} />
+            <Route path="/reports" element={<RequireAccess user={user} feature="financialCockpit"><ReportsPage /></RequireAccess>} />
             <Route path="/admin" element={<RequireAccess user={user} platformAdmin><AdminPage /></RequireAccess>} />
           </Routes>
         </ErrorBoundary>

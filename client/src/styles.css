@@ -471,6 +471,16 @@ textarea {
   grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
+.report-filter-grid.refined {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(220px, 1.35fr) auto;
+}
+
+.report-filter-grid select[multiple] {
+  min-height: 42px;
+  max-height: 88px;
+  padding: 0.35rem 0.5rem;
+}
+
 .financial-filter-grid label {
   display: grid;
   gap: 0.18rem;
