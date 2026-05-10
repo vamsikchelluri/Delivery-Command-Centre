@@ -35,6 +35,7 @@ function queryFromFilters(filters) {
 }
 
 export function ReportsPage() {
+  const [activeReport, setActiveReport] = useState("resourceProfitability");
   const [filters, setFilters] = useState({
     dateFrom: "",
     dateTo: "",
@@ -91,10 +92,28 @@ export function ReportsPage() {
     <div className="workspace">
       <PageHeaderCard
         eyebrow="Reports"
-        title="Resource Profitability Report"
-        subtitle="Resource-level planned hours, actual hours, billed revenue, cost, and PTO / fixed-bid uplift by SOW."
+        title="Reports"
+        subtitle="Operational and financial reports for delivery leadership."
         actions={<button type="button" onClick={exportCsv}>Export CSV</button>}
       />
+
+      <div className="report-catalog-tabs" aria-label="Reports catalog">
+        <button
+          className={activeReport === "resourceProfitability" ? "active" : ""}
+          type="button"
+          onClick={() => setActiveReport("resourceProfitability")}
+        >
+          Resource Profitability
+        </button>
+      </div>
+
+      <div className="report-title-strip">
+        <div>
+          <p className="eyebrow">Report 1</p>
+          <h2>Resource Profitability Report</h2>
+        </div>
+        <p>Resource-level planned hours, actual hours, billed revenue, cost, and planned billing uplift by SOW.</p>
+      </div>
 
       <div className="financial-filter-panel resource-filter-panel">
         <div>
@@ -122,7 +141,7 @@ export function ReportsPage() {
             </div>
           ))}
         </div>
-        <div className="stats-grid register-kpi-row report-kpi-row">
+        <div className="report-kpi-row">
           <StatCard label="Planned Hours" value={hours(totals.plannedHours)} />
           <StatCard label="Actual Hours" value={hours(totals.actualHours)} />
           <StatCard label="Revenue" value={money(totals.revenue)} />

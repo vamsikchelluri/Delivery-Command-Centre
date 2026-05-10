@@ -35,6 +35,14 @@ function earliestDateKey(...values) {
   return values.map(dateKey).filter(Boolean).sort()[0] || "";
 }
 
+function effectiveDeploymentStart(deployment, role, sow) {
+  return latestDateKey(deployment.startDate, role.startDate) || dateKey(sow.startDate);
+}
+
+function effectiveDeploymentEnd(deployment, role, sow) {
+  return earliestDateKey(deployment.endDate, role.endDate) || dateKey(sow.endDate);
+}
+
 function monthsBetween(startValue, endValue) {
   const start = monthStart(startValue);
   const end = monthStart(endValue);
@@ -173,8 +181,8 @@ async function resourceProfitabilityPayload(query) {
       _weightedOverheadAmountPerHour: 0
     };
 
-    const start = latestDateKey(deployment.startDate, role.startDate, sow.startDate);
-    const end = earliestDateKey(deployment.endDate, role.endDate, sow.endDate);
+    const start = effectiveDeploymentStart(deployment, role, sow);
+    const end = effectiveDeploymentEnd(deployment, role, sow);
     if (!existing.resourceStartDate || (start && start < existing.resourceStartDate)) {
       existing.resourceStartDate = start;
     }
@@ -192,8 +200,8 @@ async function resourceProfitabilityPayload(query) {
     if (!role || !sow || !resource) continue;
 
     const row = ensureRow(sow, deployment, role, resource);
-    const effectiveStartDate = latestDateKey(deployment.startDate, role.startDate, sow.startDate);
-    const effectiveEndDate = earliestDateKey(deployment.endDate, role.endDate, sow.endDate);
+    const effectiveStartDate = effectiveDeploymentStart(deployment, role, sow);
+    const effectiveEndDate = effectiveDeploymentEnd(deployment, role, sow);
     const effectiveMonths = overlapMonthRange(effectiveStartDate, effectiveEndDate, dateFrom, dateTo);
     const actualRows = actuals.filter((actual) =>
       actual.deploymentId === deployment.id &&
