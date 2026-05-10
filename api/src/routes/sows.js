@@ -48,6 +48,8 @@ router.get("/", async (_req, res) => {
             .filter((deployment) => deployment.sowRoleId === role.id)
             .map((deployment) => ({
               ...deployment,
+              startDate: role.startDate || deployment.startDate,
+              endDate: role.endDate || deployment.endDate,
               resource: getCollection("resources").find((resource) => resource.id === deployment.resourceId) || null
             }))
         })),
@@ -71,6 +73,8 @@ router.get("/:id", async (req, res) => {
         .filter((deployment) => deployment.sowRoleId === role.id)
         .map((deployment) => ({
           ...deployment,
+          startDate: role.startDate || deployment.startDate,
+          endDate: role.endDate || deployment.endDate,
           resource: getCollection("resources").find((resource) => resource.id === deployment.resourceId)
         }));
 

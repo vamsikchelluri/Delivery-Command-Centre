@@ -78,7 +78,7 @@ export function ResourceDetailPage() {
       </div>
 
       <div className="tabs" role="tablist">
-        {["Overview", "Resource Profile", "Resource Planning and Costing", "Deployments", "Linked Opportunities", "Audit Trail"].map((tab) => (
+        {["Overview", "Resource Profile", "Resource Planning and Costing", "Deployments", "Linked Opportunities"].map((tab) => (
           <button
             key={tab}
             className={activeTab === tab ? "tab active" : "tab"}
@@ -205,21 +205,6 @@ export function ResourceDetailPage() {
           rows={resource.linkedOpportunities}
         />
       </Section>
-      ) : null}
-
-      {activeTab === "Audit Trail" ? (
-        <Section title="Audit Trail">
-          <DataTable
-            columns={[
-              { key: "number", label: "Audit" },
-              { key: "actionType", label: "Action" },
-              { key: "actor", label: "Actor" },
-              { key: "sourceScreen", label: "Source" },
-              { key: "createdAt", label: "Time", render: (row) => row.createdAt?.slice(0, 16) || "-" }
-            ]}
-            rows={resource.auditTrail}
-          />
-        </Section>
       ) : null}
     </div>
   );

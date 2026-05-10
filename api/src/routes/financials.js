@@ -143,7 +143,7 @@ function plannedRow(plan, { rolesById, deploymentsById, resourcesById }) {
   const role = rolesById.get(plan.sowRoleId || deployment?.sowRoleId);
   const resource = deployment ? resourcesById.get(deployment.resourceId) : null;
   if (!role) return null;
-  if (!monthWithinRange(plan.month, deployment?.startDate || role.startDate, deployment?.endDate || role.endDate)) return null;
+  if (!monthWithinRange(plan.month, role.startDate, role.endDate)) return null;
   const hours = quantityToHours(plan.plannedQuantity, plan.plannedUnit || role.measurementUnit || "HOURS");
   const billRate = Number(deployment?.lockedBillRate || role.billRate || 0);
   const costRate = Number(deployment?.lockedCostRate || resource?.costRate || role.costRate || role.loadedCostGuidance || role.costGuidance || 0);
@@ -163,6 +163,7 @@ function actualRow(actual, { rolesById, deploymentsById, resourcesById }) {
   const role = rolesById.get(deployment?.sowRoleId);
   const resource = resourcesById.get(deployment?.resourceId);
   if (!deployment || !role) return null;
+  if (!monthWithinRange(actual.month, role.startDate, role.endDate)) return null;
   const hours = quantityToHours(actual.actualQuantity, actual.actualUnit || role.measurementUnit || "HOURS");
   const billRate = Number(deployment.lockedBillRate || role.billRate || 0);
   const costRate = Number(deployment.lockedCostRate || resource?.costRate || role.costRate || role.loadedCostGuidance || role.costGuidance || 0);

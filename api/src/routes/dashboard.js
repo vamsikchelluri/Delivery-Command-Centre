@@ -142,6 +142,9 @@ router.get("/", async (req, res) => {
     const deployment = deployments.find((item) => item.id === actual.deploymentId);
     const role = roles.find((item) => item.id === deployment?.sowRoleId);
     const resource = resources.find((item) => item.id === deployment?.resourceId);
+    if (!role || !monthWithinRange(actual.month, role.startDate, role.endDate)) {
+      return totals;
+    }
     const hours = quantityToHours(actual.actualQuantity, actual.actualUnit || role?.measurementUnit || "HOURS");
     const billRate = Number(deployment?.lockedBillRate || role?.billRate || 0);
     const costRate = Number(deployment?.lockedCostRate || resource?.costRate || role?.costRate || role?.loadedCostGuidance || 0);
@@ -155,7 +158,7 @@ router.get("/", async (req, res) => {
   function planToFinancials(totals, plan) {
     const deployment = plan.deploymentId ? deployments.find((item) => item.id === plan.deploymentId) : null;
     const role = roles.find((item) => item.id === (plan.sowRoleId || deployment?.sowRoleId));
-    if (!role || !monthWithinRange(plan.month, deployment?.startDate || role.startDate, deployment?.endDate || role.endDate)) {
+    if (!role || !monthWithinRange(plan.month, role.startDate, role.endDate)) {
       return totals;
     }
     const hours = quantityToHours(plan.plannedQuantity, plan.plannedUnit || role?.measurementUnit || "HOURS");

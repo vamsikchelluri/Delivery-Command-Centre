@@ -19,7 +19,13 @@ function activeDeploymentsForResource(resourceId, deployments, roles, sows) {
     .map((deployment) => {
       const role = roles.find((item) => item.id === deployment.sowRoleId) || null;
       const sow = sows.find((item) => item.id === role?.sowId) || null;
-      return { ...deployment, role, sow };
+      return {
+        ...deployment,
+        startDate: role?.startDate || deployment.startDate,
+        endDate: role?.endDate || deployment.endDate,
+        role,
+        sow
+      };
     });
 }
 

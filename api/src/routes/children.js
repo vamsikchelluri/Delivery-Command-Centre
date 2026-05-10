@@ -56,6 +56,18 @@ function monthWithinRange(month, startDate, endDate) {
   return (!start || key >= start) && (!end || key <= end);
 }
 
+function roleDateRange(role) {
+  return {
+    startDate: role?.startDate || "",
+    endDate: role?.endDate || ""
+  };
+}
+
+function roleDateRangeLabel(role) {
+  const range = roleDateRange(role);
+  return [dateLabel(range.startDate), dateLabel(range.endDate)].filter(Boolean).join(" to ");
+}
+
 async function deriveCostGuidance(billRate, targetMargin, engagementType, locationType) {
   const rate = Number(billRate || 0);
   const margin = Number(targetMargin || 0);
@@ -127,7 +139,70 @@ async function normalizeChildRecord(collection, payload, existing = {}) {
       quantity: 1
     }, existing);
   }
+  if (collection === "deployments") {
+    const next = { ...payload };
+    const roleId = next.sowRoleId || existing.sowRoleId;
+    const role = getCollection("sowRoles").find((item) => item.id === roleId);
+    if (role?.startDate) {
+      next.startDate = role.startDate;
+    }
+    if (role?.endDate) {
+      next.endDate = role.endDate;
+    }
+    return next;
+  }
   return payload;
+}
+
+function actualsOutsideRoleRange(role) {
+  const deployments = getCollection("deployments").filter((item) => item.sowRoleId === role.id);
+  const deploymentIds = new Set(deployments.map((item) => item.id));
+  return getCollection("actuals").filter((actual) =>
+    deploymentIds.has(actual.deploymentId) &&
+    !monthWithinRange(actual.month, role.startDate, role.endDate)
+  );
+}
+
+function syncRoleDateDependents(role, actor) {
+  const deployments = getCollection("deployments").filter((item) => item.sowRoleId === role.id);
+  for (const deployment of deployments) {
+    const changes = {};
+    if (role.startDate && deployment.startDate !== role.startDate) {
+      changes.startDate = role.startDate;
+    }
+    if (role.endDate && deployment.endDate !== role.endDate) {
+      changes.endDate = role.endDate;
+    }
+    if (Object.keys(changes).length) {
+      const before = { ...deployment };
+      const updated = updateRecord("deployments", deployment.id, changes);
+      addAudit({
+        entityName: "deployments",
+        recordId: deployment.id,
+        actionType: "UPDATE",
+        actor,
+        oldValue: before,
+        newValue: updated,
+        sourceScreen: "Role Date Sync"
+      });
+    }
+  }
+
+  const plans = getCollection("deploymentPlans").filter((item) =>
+    item.sowRoleId === role.id && !monthWithinRange(item.month, role.startDate, role.endDate)
+  );
+  for (const plan of plans) {
+    const deleted = deleteRecord("deploymentPlans", plan.id);
+    addAudit({
+      entityName: "deploymentPlans",
+      recordId: plan.id,
+      actionType: "DELETE",
+      actor,
+      oldValue: deleted,
+      newValue: null,
+      sourceScreen: "Role Date Sync"
+    });
+  }
 }
 
 function validateDeploymentPlanRange(plan) {
@@ -141,13 +216,12 @@ function validateDeploymentPlanRange(plan) {
   if (!role) {
     return "";
   }
-  const startDate = deployment?.startDate || role.startDate;
-  const endDate = deployment?.endDate || role.endDate;
+  const { startDate, endDate } = roleDateRange(role);
   if (monthWithinRange(plan.month, startDate, endDate)) {
     return "";
   }
-  const rangeLabel = [dateLabel(startDate), dateLabel(endDate)].filter(Boolean).join(" to ");
-  return `Deployment plan month must be within the role/deployment date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
+  const rangeLabel = roleDateRangeLabel(role);
+  return `Deployment plan month must be within the role date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
 }
 
 function validateActualRange(actual) {
@@ -161,13 +235,12 @@ function validateActualRange(actual) {
   if (!deployment || !role) {
     return "";
   }
-  const startDate = deployment.startDate || role.startDate;
-  const endDate = deployment.endDate || role.endDate;
+  const { startDate, endDate } = roleDateRange(role);
   if (monthWithinRange(actual.month, startDate, endDate)) {
     return "";
   }
-  const rangeLabel = [dateLabel(startDate), dateLabel(endDate)].filter(Boolean).join(" to ");
-  return `Actual month must be within the deployment date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
+  const rangeLabel = roleDateRangeLabel(role);
+  return `Actual month must be within the role date range${rangeLabel ? ` (${rangeLabel})` : ""}.`;
 }
 
 function calculateOpportunityRoleRevenue(role) {
@@ -394,6 +467,9 @@ router.post("/:collection", async (req, res) => {
     }
   }
   const record = upsertRecord(req.params.collection, payload, req.user?.name || "Unknown", "Child CRUD");
+  if (req.params.collection === "sowRoles") {
+    syncRoleDateDependents(record, req.user?.name || "Unknown");
+  }
   if (req.params.collection === "opportunityRoles") {
     refreshOpportunityTotals(record.opportunityId);
   }
@@ -415,6 +491,22 @@ router.patch("/:collection/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid payload", issues: parsed.error.issues });
   }
   const normalizedChanges = await normalizeChildRecord(req.params.collection, parsed.data, existing);
+  if (req.params.collection === "sowRoles") {
+    const candidate = { ...existing, ...normalizedChanges };
+    const dateChanged =
+      normalizedChanges.startDate !== undefined ||
+      normalizedChanges.endDate !== undefined ||
+      normalizedChanges.duration !== undefined;
+    if (dateChanged) {
+      const blockedActuals = actualsOutsideRoleRange(candidate);
+      if (blockedActuals.length) {
+        const months = [...new Set(blockedActuals.map((actual) => monthKey(actual.month)))].sort().join(", ");
+        return res.status(400).json({
+          message: `Role dates cannot be changed because actuals already exist outside the new role date range (${months}).`
+        });
+      }
+    }
+  }
   if (req.params.collection === "deploymentPlans") {
     const rangeError = validateDeploymentPlanRange({ ...existing, ...normalizedChanges });
     if (rangeError) {
@@ -428,6 +520,9 @@ router.patch("/:collection/:id", async (req, res) => {
     }
   }
   const updated = updateRecord(req.params.collection, req.params.id, normalizedChanges);
+  if (req.params.collection === "sowRoles") {
+    syncRoleDateDependents(updated, req.user?.name || "Unknown");
+  }
   addAudit({
     entityName: req.params.collection,
     recordId: req.params.id,

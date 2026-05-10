@@ -36,8 +36,8 @@ export function formatDateKey(value) {
 }
 
 export function deploymentCurrentState(deployment, todayKey = localDateKey()) {
-  const start = formatDateKey(deployment.startDate);
-  const end = formatDateKey(deployment.endDate);
+  const start = formatDateKey(deployment.effectiveStartDate || deployment.startDate);
+  const end = formatDateKey(deployment.effectiveEndDate || deployment.endDate);
   if (start && start > todayKey) {
     return "Future";
   }
@@ -64,11 +64,16 @@ export function deriveCurrentResourceState(resource, { deployments = [], roles =
     .map((deployment) => {
       const role = roles.find((item) => item.id === deployment.sowRoleId) || null;
       const sow = sows.find((item) => item.id === role?.sowId) || null;
-      return {
+      const effectiveDeployment = {
         ...deployment,
+        effectiveStartDate: role?.startDate || deployment.startDate,
+        effectiveEndDate: role?.endDate || deployment.endDate
+      };
+      return {
+        ...effectiveDeployment,
         role,
         sow,
-        currentState: deploymentCurrentState(deployment, todayKey)
+        currentState: deploymentCurrentState(effectiveDeployment, todayKey)
       };
     });
 

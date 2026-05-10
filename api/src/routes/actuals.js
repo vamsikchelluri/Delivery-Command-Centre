@@ -161,13 +161,8 @@ function rowStatus(planned, actualQuantity) {
 function hydrateDeploymentActuals({ sow, role, deployment, resource, actuals, deploymentPlans }) {
   const billRate = Number(deployment.lockedBillRate || role.billRate || 0);
   const costRate = Number(deployment.lockedCostRate || resource?.costRate || role.costRate || role.loadedCostGuidance || 0);
-  const effectiveStartDate = deployment.startDate || role.startDate || sow.startDate;
-  const uncappedEndDate = latestDateValue(
-    deployment.endDate,
-    role.endDate,
-    latestPlanMonthEnd({ role, deployment, actuals, deploymentPlans })
-  );
-  const effectiveEndDate = uncappedEndDate || sow.endDate;
+  const effectiveStartDate = role.startDate || deployment.startDate || sow.startDate;
+  const effectiveEndDate = role.endDate || deployment.endDate || sow.endDate;
   const monthRows = monthsBetween(effectiveStartDate, effectiveEndDate).map((month) => {
     const monthId = monthKey(month);
     const actual = actuals.find((item) => item.deploymentId === deployment.id && String(item.month || "").slice(0, 10) === monthId);
@@ -176,7 +171,7 @@ function hydrateDeploymentActuals({ sow, role, deployment, resource, actuals, de
     ) || deploymentPlans.find((item) =>
       !item.deploymentId && item.sowRoleId === role.id && String(item.month || "").slice(0, 10) === monthId
     );
-    const plannedQuantity = deploymentPlan ? Number(deploymentPlan.plannedQuantity || 0) : derivePlannedQuantity(role, deployment, month);
+    const plannedQuantity = deploymentPlan ? Number(deploymentPlan.plannedQuantity || 0) : 0;
     const actualQuantity = actual ? Number(actual.actualQuantity || 0) : null;
     return {
       id: `${deployment.id}-${monthId}`,
@@ -187,7 +182,7 @@ function hydrateDeploymentActuals({ sow, role, deployment, resource, actuals, de
       plannedQuantity,
       plannedUnit: deploymentPlan?.plannedUnit || role.measurementUnit || "HOURS",
       plannedNotes: deploymentPlan?.notes || "",
-      planSource: deploymentPlan ? "Manual Plan" : "Derived",
+      planSource: deploymentPlan ? "Manual Plan" : "No Plan",
       actualId: actual?.id || "",
       actualQuantity,
       actualUnit: actual?.actualUnit || role.measurementUnit || "HOURS",
