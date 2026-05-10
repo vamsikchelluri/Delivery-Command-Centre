@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { getCollection } from "../data/store.js";
+import { standardManMonthHours } from "../lib/masterSettings.js";
 import { deriveCurrentResourceState, localDateKey, summarizeCurrentResourceStatuses } from "../lib/resourceStatus.js";
 
 const router = Router();
-const STANDARD_MONTH_HOURS = 168;
 
 function quantityToHours(quantity, unit) {
   const value = Number(quantity || 0);
-  return unit === "MAN_MONTHS" ? value * STANDARD_MONTH_HOURS : value;
+  return unit === "MAN_MONTHS" ? value * standardManMonthHours() : value;
 }
 
 function monthKey(value) {

@@ -110,6 +110,7 @@ router.post("/", async (req, res) => {
     primarySkill: z.string().min(2),
     subModule: z.string().optional(),
     primarySubModules: z.array(z.string()).default([]),
+    experienceLevel: z.string().optional(),
     secondarySkills: z.array(z.object({
       skill: z.string().min(2),
       subModule: z.string().optional()
@@ -169,6 +170,7 @@ router.patch("/:id", async (req, res) => {
     primarySkill: z.string().min(2).optional(),
     subModule: z.string().optional(),
     primarySubModules: z.array(z.string()).optional(),
+    experienceLevel: z.string().optional(),
     secondarySkills: z.array(z.object({
       skill: z.string().min(2),
       subModule: z.string().optional()

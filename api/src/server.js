@@ -51,7 +51,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/dashboard", requireAuth, requirePermission("commandCenter", "view"), redactSensitiveFinancials, dashboardRoutes);
 app.use("/api/resource-planning", requireAuth, requirePermission("resourcePlanning", "view"), redactSensitiveFinancials, resourcePlanningRoutes);
 app.use("/api/financials", requireAuth, requirePermission("financialCockpit", "view"), redactSensitiveFinancials, financialRoutes);
-app.use("/api/reports", requireAuth, requirePermission("financialCockpit", "view"), redactSensitiveFinancials, reportRoutes);
+app.use("/api/reports", requireAuth, requirePermission("reports", "view"), redactSensitiveFinancials, reportRoutes);
 app.use("/api/accounts", requireAuth, requirePermission("clients"), accountRoutes);
 app.use("/api/resources", requireAuth, requirePermission("resources"), redactSensitiveFinancials, resourceRoutes);
 app.use("/api/opportunities", requireAuth, requirePermission("opportunities"), redactSensitiveFinancials, opportunityRoutes);

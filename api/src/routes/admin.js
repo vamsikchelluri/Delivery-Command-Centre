@@ -16,6 +16,15 @@ function stripUndefined(record) {
   return Object.fromEntries(Object.entries(record).filter(([, value]) => value !== undefined));
 }
 
+function normalizeAdminPayload(collection, payload) {
+  const next = { ...payload };
+  if (collection === "fxRates") {
+    next.validFrom = new Date(next.validFrom);
+    next.validTo = next.validTo ? new Date(next.validTo) : null;
+  }
+  return next;
+}
+
 function sanitizeUser(user) {
   if (!user) return user;
   const { passwordHash: _passwordHash, temporaryPassword: _temporaryPassword, ...safeUser } = user;
@@ -34,6 +43,14 @@ const postgresAdminCollections = {
   currencies: {
     model: "currency",
     orderBy: { code: "asc" }
+  },
+  fxRates: {
+    model: "fxRate",
+    orderBy: [{ currencyCode: "asc" }, { validFrom: "desc" }]
+  },
+  masterDataItems: {
+    model: "masterDataItem",
+    orderBy: [{ category: "asc" }, { sortOrder: "asc" }, { label: "asc" }]
   },
   regions: {
     model: "region",
@@ -123,6 +140,28 @@ const collections = {
       active: z.boolean().default(true)
     })
   },
+  fxRates: {
+    schema: z.object({
+      id: z.string().optional(),
+      currencyCode: z.string().min(2),
+      rateToUsd: z.coerce.number().positive(),
+      validFrom: z.string(),
+      validTo: z.string().optional().or(z.literal("")),
+      active: z.boolean().default(true)
+    })
+  },
+  masterDataItems: {
+    schema: z.object({
+      id: z.string().optional(),
+      category: z.string().min(2),
+      code: z.string().min(1),
+      label: z.string().min(1),
+      description: z.string().optional(),
+      sortOrder: z.coerce.number().min(0).default(0),
+      active: z.boolean().default(true),
+      metadata: z.any().optional()
+    })
+  },
   regions: {
     schema: z.object({
       id: z.string().optional(),
@@ -136,7 +175,7 @@ const collections = {
     schema: z.object({
       id: z.string().optional(),
       name: z.string().min(2),
-      locationType: z.enum(["Offshore", "Onsite", "Nearshore"]).default("Offshore"),
+      locationType: z.string().min(2).default("Offshore"),
       defaultCompensationCurrency: z.string().optional(),
       defaultPaymentCurrency: z.string().optional(),
       active: z.boolean().default(true)
@@ -403,7 +442,7 @@ router.post("/:collection", asyncRoute(async (req, res) => {
     return res.status(400).json({ message: "A user with this email already exists." });
   }
 
-  const payload = { ...parsed.data };
+  const payload = normalizeAdminPayload(req.params.collection, parsed.data);
   if (req.params.collection === "users") {
     payload.passwordHash = await hashPassword(parsed.data.temporaryPassword);
     payload.number = payload.number || nextDocumentNumber("User");
@@ -470,7 +509,7 @@ router.patch("/:collection/:id", asyncRoute(async (req, res) => {
     if (req.params.collection === "users" && parsed.data.role && !(await validateUserRole(parsed.data.role))) {
       return res.status(400).json({ message: "User role must be selected from active Admin roles." });
     }
-    const payload = { ...parsed.data };
+    const payload = normalizeAdminPayload(req.params.collection, parsed.data);
     if (req.params.collection === "users") {
       if (payload.temporaryPassword) {
         payload.passwordHash = await hashPassword(payload.temporaryPassword);

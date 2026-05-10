@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { getCollection } from "../data/store.js";
+import { standardManMonthHours } from "../lib/masterSettings.js";
 
 const router = Router();
-const STANDARD_MONTH_HOURS = 168;
 
 function monthStart(value) {
   const date = new Date(value);
@@ -94,7 +94,7 @@ function latestPlanMonthEnd({ role, deployment, actuals, deploymentPlans }) {
 
 function quantityToHours(quantity, unit) {
   const value = Number(quantity || 0);
-  return unit === "MAN_MONTHS" ? value * STANDARD_MONTH_HOURS : value;
+  return unit === "MAN_MONTHS" ? value * standardManMonthHours() : value;
 }
 
 function marginPercent(revenue, cost) {

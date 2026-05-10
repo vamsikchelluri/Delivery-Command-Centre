@@ -1,9 +1,9 @@
 import { Router } from "express";
 import { getCollection } from "../data/store.js";
 import { getEngagementOverheadRules, removeOverheadFromLoadedCost } from "../lib/overheadRules.js";
+import { standardManMonthHours } from "../lib/masterSettings.js";
 
 const router = Router();
-const STANDARD_MONTH_HOURS = 168;
 const INCLUDED_SOW_STATUSES = new Set(["ACTIVE", "COMPLETED"]);
 
 function monthKey(value) {
@@ -72,7 +72,7 @@ function overlapMonthRange(startDate, endDate, from, to) {
 
 function quantityToHours(quantity, unit) {
   const value = Number(quantity || 0);
-  return unit === "MAN_MONTHS" ? value * STANDARD_MONTH_HOURS : value;
+  return unit === "MAN_MONTHS" ? value * standardManMonthHours() : value;
 }
 
 function round(value) {

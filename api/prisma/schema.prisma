@@ -141,6 +141,7 @@ model Resource {
   subModule               String?
   primarySubModules       String[]         @default([])
   secondarySkills         Json?
+  experienceLevel         String?
   location                String?
   locationType            String?
   employmentType          String?
@@ -429,6 +430,36 @@ model Currency {
   name     String
   fxToUsd  Float
   active   Boolean @default(true)
+}
+
+model FxRate {
+  id           String   @id @default(cuid())
+  currencyCode String
+  rateToUsd    Float
+  validFrom    DateTime
+  validTo      DateTime?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([currencyCode])
+  @@index([validFrom])
+}
+
+model MasterDataItem {
+  id          String   @id @default(cuid())
+  category    String
+  code        String
+  label       String
+  description String?
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([category, code])
+  @@index([category])
 }
 
 model Region {

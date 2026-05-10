@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch, patchJson, postJson } from "../lib/api";
 import { canEditResourceCost, canViewResourceCost, currentUser } from "../lib/permissions";
 import { DEFAULT_OVERHEAD_RULES, applyOverheadToBaseCost, findOverheadRule } from "../lib/overheadRules";
+import { activeMasterItems, configValue, optionLabel, optionValue, rateForCurrency } from "../lib/masters";
 import { DataTable, Field, Section } from "../components.jsx";
 
 export function SaveBar({ backTo, label }) {
@@ -92,10 +93,13 @@ export function AccountFormPage() {
   const isEdit = Boolean(id);
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => apiFetch("/accounts") });
   const { data: regions = [] } = useQuery({ queryKey: ["admin", "regions"], queryFn: () => apiFetch("/admin/regions") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
   const record = accounts.find((item) => item.id === id);
   const [activeTab, setActiveTab] = useState("Client Details");
   const [form, setForm] = useState({ name: "", status: "ACTIVE", industry: "", region: "", contactPerson: "", contactEmail: "", contactPhone: "", notes: "" });
   const regionOptions = regions.filter((region) => region.active !== false).sort((a, b) => Number(a.sortOrder || 0) - Number(b.sortOrder || 0));
+  const industryOptions = activeMasterItems(masters, "industry");
+  const clientStatusOptions = activeMasterItems(masters, "clientStatus");
 
   useEffect(() => {
     if (record) {
@@ -131,12 +135,15 @@ export function AccountFormPage() {
               <Field label="Client Name"><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></Field>
               <Field label="Client Status">
                 <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
-                  <option value="TERMINATED">Terminated</option>
+                  {clientStatusOptions.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                 </select>
               </Field>
-              <Field label="Industry"><input value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })} /></Field>
+              <Field label="Industry">
+                <select value={form.industry} onChange={(event) => setForm({ ...form, industry: event.target.value })}>
+                  <option value="">Select</option>
+                  {industryOptions.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
+                </select>
+              </Field>
               <Field label="Region">
                 <select value={form.region} onChange={(event) => setForm({ ...form, region: event.target.value })}>
                   <option value="">Select</option>
@@ -167,6 +174,10 @@ export function ResourceFormPage() {
   const { data: skills = [] } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: users = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: () => apiFetch("/admin/users") });
   const { data: currencies = [] } = useQuery({ queryKey: ["admin", "currencies"], queryFn: () => apiFetch("/admin/currencies") });
+  const { data: fxRates = [] } = useQuery({ queryKey: ["admin", "fxRates"], queryFn: () => apiFetch("/admin/fxRates") });
+  const { data: systemConfigs = [] } = useQuery({ queryKey: ["admin", "systemConfigs"], queryFn: () => apiFetch("/admin/systemConfigs") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
+  const { data: experienceLevels = [] } = useQuery({ queryKey: ["admin", "experienceLevels"], queryFn: () => apiFetch("/admin/experienceLevels") });
   const { data: locations = [] } = useQuery({ queryKey: ["admin", "locations"], queryFn: () => apiFetch("/admin/locations") });
   const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const record = resources.find((item) => item.id === id);
@@ -175,6 +186,7 @@ export function ResourceFormPage() {
   const [form, setForm] = useState({
     firstName: "", lastName: "", contactEmail: "", contactNumber: "",
     primarySkill: "SAP FICO", subModule: "", primarySubModules: [], secondarySkills: [],
+    experienceLevel: "",
     location: "", locationType: "Offshore",
     employmentType: "Full-Time", employmentStatus: "ACTIVE", deliveryStatus: "AVAILABLE", deployedPercent: 0,
     joiningDate: "", noticePeriod: "30 days", deliveryRollOffDate: "", availabilityDate: "",
@@ -196,6 +208,7 @@ export function ResourceFormPage() {
         subModule: record.subModule || "",
         primarySubModules: record.primarySubModules?.length ? record.primarySubModules : (record.subModule ? [record.subModule] : []),
         secondarySkills: record.secondarySkills || [],
+        experienceLevel: record.experienceLevel || "",
         location: record.location || "",
         locationType: record.locationType || "Offshore",
         employmentType: record.employmentType || "Full-Time",
@@ -225,6 +238,11 @@ export function ResourceFormPage() {
   }, [record]);
 
   const skillOptions = activeSkills(skills);
+  const locationTypeOptions = activeMasterItems(masters, "locationType");
+  const engagementTypeOptions = activeMasterItems(masters, "engagementType");
+  const costingTypeOptions = activeMasterItems(masters, "costingType");
+  const availabilityExceptionOptions = activeMasterItems(masters, "availabilityExceptionType");
+  const standardHoursPerYear = Number(configValue(systemConfigs, "standardHoursPerYear", "1800") || 1800);
   const selectedSkill = skillOptions.find((skill) => skill.name === form.primarySkill);
   const locationOptions = locations.filter((location) => location.active !== false);
   const currencyOptions = currencies.filter((currency) => currency.active !== false);
@@ -235,7 +253,7 @@ export function ResourceFormPage() {
   const visaOptions = form.locationType === "Offshore"
     ? ["NA (Offshore)"]
     : ["H1B", "OPT", "Green Card", "US Citizen", "L1", "Other"];
-  const compensationTypeOptions = ["", ...allowedCompensationTypes(form.locationType, form.employmentType)];
+  const compensationTypeOptions = ["", ...costingTypeOptions.map(optionValue).filter((value) => allowedCompensationTypes(form.locationType, form.employmentType).includes(value))];
   const configuredOverheadRule = findOverheadRule(overheadRules, form.employmentType, form.locationType);
   const configuredOverheadLabel = overheadRuleLabel(configuredOverheadRule, form.employmentType, form.locationType);
   const costFormulaHint =
@@ -255,10 +273,10 @@ export function ResourceFormPage() {
     }
 
     if (next.locationType === "Offshore") {
-      next.fxRateUsed = next.compensationCurrency === "USD" ? 1 : 88;
+      next.fxRateUsed = rateForCurrency(fxRates, next.compensationCurrency || "USD");
       next.visaWorkAuthorization = "NA (Offshore)";
     } else {
-      next.fxRateUsed = next.compensationCurrency === "INR" ? 88 : 1;
+      next.fxRateUsed = rateForCurrency(fxRates, next.compensationCurrency || "USD");
       if (next.visaWorkAuthorization === "NA (Offshore)") {
         next.visaWorkAuthorization = "H1B";
       }
@@ -286,7 +304,7 @@ export function ResourceFormPage() {
 
     const compensation = Number(next.compensationValue || 0);
     const fx = Number(next.fxRateUsed || 1);
-    const hours = 1800;
+    const hours = standardHoursPerYear;
     if (!next.compensationInputType) {
       next.costRate = compensation ? Number(compensation.toFixed(2)) : Number(next.costRate || 0);
     } else if (next.costCalculationMode === "Offshore Employee") {
@@ -307,7 +325,7 @@ export function ResourceFormPage() {
     if (JSON.stringify(next) !== JSON.stringify(form)) {
       setForm(next);
     }
-  }, [form.locationType, form.employmentType, form.compensationInputType, form.compensationValue, form.compensationCurrency, form.paymentCurrency, overheadRules]);
+  }, [form.locationType, form.employmentType, form.compensationInputType, form.compensationValue, form.compensationCurrency, form.paymentCurrency, overheadRules, fxRates, standardHoursPerYear]);
 
   function updateLocation(locationName) {
     const location = locationOptions.find((item) => item.name === locationName);
@@ -402,9 +420,15 @@ export function ResourceFormPage() {
                   {locationOptions.map((location) => <option key={location.id} value={location.name}>{location.name}</option>)}
                 </select>
               </Field>
-              <Field label="Location Type"><select value={form.locationType} onChange={(event) => updateLocationType(event.target.value)}><option>Offshore</option><option>Onsite</option><option>Nearshore</option></select></Field>
-              <Field label="Engagement Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}><option>Full-Time</option><option>Part-Time</option><option>Contractor</option><option>C2C</option></select></Field>
+              <Field label="Location Type"><select value={form.locationType} onChange={(event) => updateLocationType(event.target.value)}>{locationTypeOptions.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}</select></Field>
+              <Field label="Engagement Type"><select value={form.employmentType} onChange={(event) => setForm({ ...form, employmentType: event.target.value })}>{engagementTypeOptions.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}</select></Field>
               <Field label="Engagement Status"><select value={form.employmentStatus} onChange={(event) => setForm({ ...form, employmentStatus: event.target.value })}><option value="ACTIVE">Active</option><option value="ON_LEAVE">Unavailable</option><option value="SABBATICAL">Extended Unavailable</option><option value="INACTIVE">Inactive</option><option value="TERMINATED">Inactive - Closed</option><option value="EXITED">Inactive - Ended</option></select></Field>
+              <Field label="Experience Level">
+                <select value={form.experienceLevel} onChange={(event) => setForm({ ...form, experienceLevel: event.target.value })}>
+                  <option value="">Select</option>
+                  {experienceLevels.filter((level) => level.active !== false).map((level) => <option key={level.id} value={level.name}>{level.name}</option>)}
+                </select>
+              </Field>
               <Field label="Primary SAP Module"><select value={form.primarySkill} onChange={(event) => setForm({ ...form, primarySkill: event.target.value, subModule: "", primarySubModules: [] })}>{skillOptions.map((skill) => <option key={skill.id}>{skill.name}</option>)}</select></Field>
               <Field label="Primary Sub-Modules">
                 <select multiple value={form.primarySubModules || []} onChange={(event) => setForm({ ...form, primarySubModules: selectedValues(event), subModule: selectedValues(event)[0] || "" })}>
@@ -501,12 +525,7 @@ export function ResourceFormPage() {
                     <Field label="Type">
                       <select value={form.notAvailableReason} onChange={(event) => setForm({ ...form, notAvailableReason: event.target.value })}>
                         <option value="">None</option>
-                        <option>Planned Leave</option>
-                        <option>Internal Hold</option>
-                        <option>Client Hold</option>
-                        <option>Training</option>
-                        <option>Administrative</option>
-                        <option>Other</option>
+                        {availabilityExceptionOptions.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                       </select>
                     </Field>
                   </div>
@@ -523,7 +542,7 @@ export function ResourceFormPage() {
                   <div><span>Cost Calculation Mode</span><strong>{form.costCalculationMode}</strong></div>
                   <div><span>Estimated Cost Rate</span><strong>${form.costRate}/hr</strong></div>
                   <div><span>FX Rate Used</span><strong>{form.fxRateUsed} {form.compensationCurrency}/USD</strong></div>
-                  <div><span>Standard Hours Per Year</span><strong>1800</strong></div>
+                  <div><span>Standard Hours Per Year</span><strong>{standardHoursPerYear}</strong></div>
                   <div><span>Configured Overhead Rule</span><strong>{configuredOverheadLabel}</strong></div>
                   <div><span>Cost Formula Hint</span><strong>{costFormulaHint}</strong></div>
                 </div>
@@ -544,6 +563,8 @@ export function OpportunityFormPage() {
   const { data: opportunities = [] } = useQuery({ queryKey: ["opportunities"], queryFn: () => apiFetch("/opportunities") });
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => apiFetch("/accounts") });
   const { data: users = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: () => apiFetch("/admin/users") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
+  const { data: currencies = [] } = useQuery({ queryKey: ["admin", "currencies"], queryFn: () => apiFetch("/admin/currencies") });
   const record = opportunities.find((item) => item.id === id);
   const [activeTab, setActiveTab] = useState("Engagement");
   const [form, setForm] = useState({
@@ -553,6 +574,8 @@ export function OpportunityFormPage() {
     notes: "", notesHistory: [], pendingNote: ""
   });
   const stageDefaults = { QUALIFYING: 20, PROPOSED: 40, NEGOTIATING: 70, SOW: 90, WON: 100, LOST: 0 };
+  const opportunityStages = activeMasterItems(masters, "opportunityStage");
+  const activeCurrencies = currencies.filter((currency) => currency.active !== false);
 
   useEffect(() => {
     setForm((current) => ({ ...current, accountId: accounts[0]?.id || current.accountId }));
@@ -642,7 +665,7 @@ export function OpportunityFormPage() {
               <Field label="Project / Opportunity Name"><input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required /></Field>
               <Field label="Source of Opportunity"><select value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })}><option>Existing Client</option><option>Referral</option><option>RFP</option><option>Cold Outreach</option><option>Partner</option><option>Other</option></select></Field>
               <Field label="Deal Type"><input value={form.dealType} onChange={(event) => setForm({ ...form, dealType: event.target.value })} /></Field>
-              <Field label="Stage"><select value={form.stage} onChange={(event) => updateStage(event.target.value)}><option value="QUALIFYING">Qualifying</option><option value="PROPOSED">Proposed</option><option value="NEGOTIATING">Negotiating</option><option value="SOW">SOW</option><option value="WON">Won</option><option value="LOST">Lost</option></select></Field>
+              <Field label="Stage"><select value={form.stage} onChange={(event) => updateStage(event.target.value)}>{opportunityStages.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}</select></Field>
               <Field label="Probability"><input type="number" step="any" value={form.probability} onChange={(event) => setForm({ ...form, probability: event.target.value })} /></Field>
               <Field label="Account Manager">
                 <select value={form.accountManagerName} onChange={(event) => setForm({ ...form, accountManagerName: event.target.value })} required>
@@ -665,7 +688,7 @@ export function OpportunityFormPage() {
             <div className="form-grid two-up">
               <Field label="Estimated Revenue"><input type="number" step="any" value={form.estimatedRevenue} onChange={(event) => setForm({ ...form, estimatedRevenue: event.target.value })} /></Field>
               <Field label="Target Margin %"><input type="number" step="any" value={form.targetMargin} onChange={(event) => setForm({ ...form, targetMargin: event.target.value })} /></Field>
-              <Field label="Currency"><input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} /></Field>
+              <Field label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })}>{activeCurrencies.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}</select></Field>
               <Field label="Expected Close"><input type="date" value={form.expectedCloseDate} onChange={(event) => setForm({ ...form, expectedCloseDate: event.target.value })} /></Field>
               <Field label="Expected Start"><input type="date" value={form.expectedStartDate} onChange={(event) => setForm({ ...form, expectedStartDate: event.target.value })} /></Field>
               <Field label="Expected End"><input type="date" value={form.expectedEndDate} onChange={(event) => setForm({ ...form, expectedEndDate: event.target.value })} /></Field>
@@ -734,6 +757,8 @@ export function SowFormPage() {
   const { data: accounts = [] } = useQuery({ queryKey: ["accounts"], queryFn: () => apiFetch("/accounts") });
   const { data: users = [] } = useQuery({ queryKey: ["admin", "users"], queryFn: () => apiFetch("/admin/users") });
   const { data: opportunities = [] } = useQuery({ queryKey: ["opportunities"], queryFn: () => apiFetch("/opportunities") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
+  const { data: currencies = [] } = useQuery({ queryKey: ["admin", "currencies"], queryFn: () => apiFetch("/admin/currencies") });
   const record = sows.find((item) => item.id === id);
   const [activeTab, setActiveTab] = useState("Engagement");
   const [form, setForm] = useState({
@@ -745,6 +770,9 @@ export function SowFormPage() {
     projectManagerName: "", deliveryManagerName: "", accountManagerName: "", projectHealth: "Green", targetMargin: 0
   });
   const wonOpportunities = opportunities.filter((item) => item.stage === "WON");
+  const billingModels = activeMasterItems(masters, "billingModel");
+  const sowStatuses = activeMasterItems(masters, "sowStatus");
+  const activeCurrencies = currencies.filter((currency) => currency.active !== false);
 
   useEffect(() => {
     setForm((current) => ({ ...current, accountId: accounts[0]?.id || current.accountId }));
@@ -893,9 +921,9 @@ export function SowFormPage() {
         {activeTab === "Timeline & Commercials" ? (
           <Section title="Timeline & Commercials">
             <div className="form-grid two-up">
-              <Field label="Billing Model"><select value={form.billingModel} onChange={(event) => setForm({ ...form, billingModel: event.target.value })}><option value="TM_HOURLY">T&M Hourly</option><option value="FIXED_MAN_MONTH">Fixed Man-Month</option><option value="FIXED_MILESTONE">Fixed Milestone</option></select></Field>
-              <Field label="Status"><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}><option value="DRAFT">Draft</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option><option value="ON_HOLD">On Hold</option><option value="COMPLETED">Completed</option><option value="TERMINATED">Terminated</option></select></Field>
-              <Field label="Currency"><input value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })} /></Field>
+              <Field label="Billing Model"><select value={form.billingModel} onChange={(event) => setForm({ ...form, billingModel: event.target.value })}>{billingModels.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}</select></Field>
+              <Field label="Status"><select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>{sowStatuses.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}</select></Field>
+              <Field label="Currency"><select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })}>{activeCurrencies.map((currency) => <option key={currency.id} value={currency.code}>{currency.code}</option>)}</select></Field>
               <Field label="Start Date"><input type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} /></Field>
               <Field label="End Date"><input type="date" value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} /></Field>
               <Field label="Contract Value"><input type="number" step="any" value={form.contractValue} onChange={(event) => setForm({ ...form, contractValue: event.target.value })} /></Field>

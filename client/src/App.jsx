@@ -79,8 +79,8 @@ function Shell() {
     { to: "/actuals", label: "Actuals", allowed: can(user, "actuals", "view") },
     { to: "/resource-planning", label: "Resource Planning", allowed: can(user, "resourcePlanning", "view") },
     { to: "/financials", label: "Financial Cockpit", allowed: can(user, "financialCockpit", "view") },
-    { to: "/reports", label: "Reports", allowed: can(user, "financialCockpit", "view") },
-    { to: "/reports/resource-profitability", label: "Resource Profitability", allowed: can(user, "financialCockpit", "view"), child: true },
+    { to: "/reports", label: "Reports", allowed: can(user, "reports", "view") },
+    { to: "/reports/resource-profitability", label: "Resource Profitability", allowed: can(user, "reports", "view"), child: true },
     { to: "/admin", label: "Admin", allowed: isPlatformAdmin(user) }
   ].filter((item) => item.allowed);
 
@@ -147,8 +147,8 @@ function Shell() {
             <Route path="/actuals/:id" element={<RequireAccess user={user} feature="actuals"><SowActualsDetailPage /></RequireAccess>} />
             <Route path="/resource-planning" element={<RequireAccess user={user} feature="resourcePlanning"><ResourcePlanningPage /></RequireAccess>} />
             <Route path="/financials" element={<RequireAccess user={user} feature="financialCockpit"><FinancialCockpitPage /></RequireAccess>} />
-            <Route path="/reports" element={<RequireAccess user={user} feature="financialCockpit"><ReportsPage /></RequireAccess>} />
-            <Route path="/reports/resource-profitability" element={<RequireAccess user={user} feature="financialCockpit"><ReportsPage /></RequireAccess>} />
+            <Route path="/reports" element={<RequireAccess user={user} feature="reports"><ReportsPage /></RequireAccess>} />
+            <Route path="/reports/resource-profitability" element={<RequireAccess user={user} feature="reports"><ReportsPage /></RequireAccess>} />
             <Route path="/admin" element={<RequireAccess user={user} platformAdmin><AdminPage /></RequireAccess>} />
           </Routes>
         </ErrorBoundary>

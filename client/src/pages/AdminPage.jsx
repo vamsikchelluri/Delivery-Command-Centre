@@ -1,23 +1,75 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, deleteJson, patchJson, postJson } from "../lib/api";
-import { DEFAULT_OVERHEAD_RULES, ENGAGEMENT_TYPES, LOCATION_TYPES, normalizeOverheadRule } from "../lib/overheadRules";
+import { DEFAULT_OVERHEAD_RULES, normalizeOverheadRule } from "../lib/overheadRules";
+import { activeMasterItems, optionLabel, optionValue } from "../lib/masters";
 import { DataTable, Field, Modal, Section } from "../components.jsx";
 
-const tabs = [
-  { key: "skills", label: "SAP Modules" },
-  { key: "experienceLevels", label: "Experience Levels" },
-  { key: "regions", label: "Regions" },
-  { key: "locations", label: "Locations" },
-  { key: "currencies", label: "Currencies / FX" },
-  { key: "overhead-rules", label: "Overhead Rules" },
-  { key: "systemConfigs", label: "System Config" },
-  { key: "numberRanges", label: "Number Ranges" },
-  { key: "appRoles", label: "Roles" },
-  { key: "role-permissions", label: "Role Permissions" },
-  { key: "users", label: "Users" },
-  { key: "audit/logs", label: "Audit Log" }
+const adminGroups = [
+  {
+    key: "organization",
+    label: "Organization Masters",
+    tabs: [
+      { key: "regions", label: "Regions" },
+      { key: "industries", label: "Industries", collection: "masterDataItems", category: "industry" },
+      { key: "locations", label: "Locations" },
+      { key: "currencies", label: "Currencies" }
+    ]
+  },
+  {
+    key: "delivery",
+    label: "Delivery Masters",
+    tabs: [
+      { key: "skills", label: "SAP Modules" },
+      { key: "experienceLevels", label: "Experience Levels" },
+      { key: "engagementTypes", label: "Engagement Types", collection: "masterDataItems", category: "engagementType" },
+      { key: "locationTypes", label: "Location Types", collection: "masterDataItems", category: "locationType" },
+      { key: "staffingPriorities", label: "Staffing Priorities", collection: "masterDataItems", category: "staffingPriority" },
+      { key: "deploymentStatuses", label: "Deployment Statuses", collection: "masterDataItems", category: "deploymentStatus" },
+      { key: "availabilityExceptions", label: "Availability Exceptions", collection: "masterDataItems", category: "availabilityExceptionType" }
+    ]
+  },
+  {
+    key: "commercial",
+    label: "Commercial Masters",
+    tabs: [
+      { key: "billingModels", label: "Billing Models", collection: "masterDataItems", category: "billingModel" },
+      { key: "costingTypes", label: "Costing Types", collection: "masterDataItems", category: "costingType" },
+      { key: "measurementUnits", label: "Measurement Units", collection: "masterDataItems", category: "measurementUnit" },
+      { key: "fxRates", label: "FX Rates" },
+      { key: "overhead-rules", label: "Overhead Rules" },
+      { key: "commercialSettings", label: "Standard Hours", collection: "systemConfigs", keys: ["standardHoursPerYear", "standardManMonthHours"] }
+    ]
+  },
+  {
+    key: "workflow",
+    label: "Workflow Masters",
+    tabs: [
+      { key: "clientStatuses", label: "Client Statuses", collection: "masterDataItems", category: "clientStatus" },
+      { key: "opportunityStages", label: "Opportunity Stages", collection: "masterDataItems", category: "opportunityStage" },
+      { key: "sowStatuses", label: "SOW Statuses", collection: "masterDataItems", category: "sowStatus" },
+      { key: "milestoneStatuses", label: "Milestone Statuses", collection: "masterDataItems", category: "milestoneStatus" },
+      { key: "attachmentTypes", label: "Attachment Types", collection: "masterDataItems", category: "attachmentType" }
+    ]
+  },
+  {
+    key: "security",
+    label: "Security & System",
+    tabs: [
+      { key: "users", label: "Users" },
+      { key: "appRoles", label: "Authorization Roles" },
+      { key: "role-permissions", label: "Role Permissions" },
+      { key: "numberRanges", label: "Number Ranges" },
+      { key: "audit/logs", label: "Audit Log" }
+    ]
+  }
 ];
+
+const tabs = adminGroups.flatMap((group) => group.tabs);
+
+function tabConfig(key) {
+  return tabs.find((tab) => tab.key === key) || tabs[0];
+}
 
 const moduleCatalog = {
   FICO: { name: "Financial Accounting & Controlling", sortOrder: 10 },
@@ -33,7 +85,8 @@ const moduleCatalog = {
 };
 
 export function AdminPage() {
-  const [active, setActive] = useState("skills");
+  const [activeGroup, setActiveGroup] = useState("organization");
+  const [active, setActive] = useState("regions");
   const [editing, setEditing] = useState(null);
   const [auditFilters, setAuditFilters] = useState({
     text: "",
@@ -44,17 +97,25 @@ export function AdminPage() {
     dateFrom: "",
     dateTo: ""
   });
+  const activeTab = tabConfig(active);
+  const collection = activeTab.collection || active;
+  const activeGroupConfig = adminGroups.find((group) => group.key === activeGroup) || adminGroups[0];
   const isRolePermissions = active === "role-permissions";
   const isOverheadRules = active === "overhead-rules";
   const { data = [], refetch, isLoading } = useQuery({
-    queryKey: ["admin", active],
-    queryFn: () => apiFetch(`/admin/${active}`),
+    queryKey: ["admin", collection],
+    queryFn: () => apiFetch(`/admin/${collection}`),
     enabled: !isRolePermissions
   });
 
   const isAudit = active === "audit/logs";
   const isSapModules = active === "skills";
-  const columns = getColumns(active, setEditing);
+  const scopedData = useMemo(() => {
+    if (activeTab.category) return data.filter((row) => row.category === activeTab.category);
+    if (activeTab.keys) return data.filter((row) => activeTab.keys.includes(row.key));
+    return data;
+  }, [activeTab.category, activeTab.keys, data]);
+  const columns = getColumns(collection, setEditing);
   const auditOptions = useMemo(() => ({
     entityNames: ["All Features", ...new Set(data.map((row) => row.entityName || "Unknown"))],
     actionTypes: ["All Actions", ...new Set(data.map((row) => row.actionType || "Unknown"))],
@@ -63,11 +124,11 @@ export function AdminPage() {
   }), [data]);
   const filteredRows = useMemo(() => {
     if (!isAudit) {
-      return data;
+      return scopedData;
     }
     const from = auditFilters.dateFrom ? new Date(`${auditFilters.dateFrom}T00:00:00`) : null;
     const to = auditFilters.dateTo ? new Date(`${auditFilters.dateTo}T23:59:59`) : null;
-    return data
+    return scopedData
       .filter((row) => {
         const rowDate = row.createdAt ? new Date(row.createdAt) : null;
         const text = `${row.number || ""} ${row.entityName || ""} ${row.actionType || ""} ${row.actor || ""} ${row.sourceScreen || ""} ${row.recordId || ""}`.toLowerCase();
@@ -82,7 +143,7 @@ export function AdminPage() {
         );
       })
       .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-  }, [auditFilters, data, isAudit]);
+  }, [auditFilters, scopedData, isAudit]);
 
   function updateAuditFilter(key, value) {
     setAuditFilters((current) => ({ ...current, [key]: value }));
@@ -94,12 +155,20 @@ export function AdminPage() {
         <div>
           <p className="eyebrow">Administration</p>
           <h2>Platform Configuration</h2>
-          <p className="muted">Manage SAP modules, FX, system configuration, number ranges, users, roles, and audit logs.</p>
+          <p className="muted">Configure organization, delivery, commercial, workflow, and security master data.</p>
         </div>
       </section>
 
       <div className="tabs" role="tablist">
-        {tabs.map((tab) => (
+        {adminGroups.map((group) => (
+          <button key={group.key} className={activeGroup === group.key ? "tab active" : "tab"} onClick={() => { setActiveGroup(group.key); setActive(group.tabs[0].key); setEditing(null); }} type="button">
+            {group.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="tabs compact-tabs" role="tablist">
+        {activeGroupConfig.tabs.map((tab) => (
           <button key={tab.key} className={active === tab.key ? "tab active" : "tab"} onClick={() => { setActive(tab.key); setEditing(null); }} type="button">
             {tab.label}
           </button>
@@ -107,8 +176,8 @@ export function AdminPage() {
       </div>
 
       <Section
-        title={tabs.find((tab) => tab.key === active)?.label}
-        actions={!isAudit && !isSapModules && !isRolePermissions ? <button onClick={() => setEditing({})} type="button">Add</button> : null}
+        title={activeTab.label}
+        actions={!isAudit && !isSapModules && !isRolePermissions ? <button onClick={() => setEditing({ category: activeTab.category || "" })} type="button">Add</button> : null}
       >
         {isAudit ? (
           <div className="admin-audit-filters">
@@ -152,7 +221,8 @@ export function AdminPage() {
       </Section>
       {editing && !isRolePermissions ? (
         <AdminForm
-          collection={active}
+          collection={collection}
+          activeTab={activeTab}
           record={editing}
           onClose={() => setEditing(null)}
           onSaved={() => {
@@ -458,6 +528,12 @@ function SapSubModuleModal({ record, onClose, onSubmit }) {
 function OverheadRulesAdmin({ rows, onSaved }) {
   const [rules, setRules] = useState([]);
   const [message, setMessage] = useState("");
+  const { data: masters = [] } = useQuery({
+    queryKey: ["admin", "masterDataItems", "overhead-rule-options"],
+    queryFn: () => apiFetch("/admin/masterDataItems")
+  });
+  const engagementTypeOptions = [...activeMasterItems(masters, "engagementType").map(optionValue), "Default"];
+  const locationTypeOptions = [...activeMasterItems(masters, "locationType").map(optionValue), "Default"];
 
   useEffect(() => {
     const source = rows?.length ? rows : DEFAULT_OVERHEAD_RULES;
@@ -474,8 +550,8 @@ function OverheadRulesAdmin({ rows, onSaved }) {
       ...current,
       {
         id: crypto.randomUUID(),
-        engagementType: "Full-Time",
-        locationType: "Onsite",
+        engagementType: engagementTypeOptions[0] || "Default",
+        locationType: locationTypeOptions[0] || "Default",
         overheadPercent: 0,
         hourlyAddOn: 0,
         active: true
@@ -530,12 +606,12 @@ function OverheadRulesAdmin({ rows, onSaved }) {
               <tr key={rule.id}>
                 <td>
                   <select value={rule.engagementType} onChange={(event) => updateRule(rule.id, "engagementType", event.target.value)}>
-                    {[...ENGAGEMENT_TYPES, "Default"].map((option) => <option key={option} value={option}>{option}</option>)}
+                    {engagementTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </td>
                 <td>
                   <select value={rule.locationType} onChange={(event) => updateRule(rule.id, "locationType", event.target.value)}>
-                    {[...LOCATION_TYPES, "Default"].map((option) => <option key={option} value={option}>{option}</option>)}
+                    {locationTypeOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                   </select>
                 </td>
                 <td><input type="number" min="0" step="any" value={rule.overheadPercent} onChange={(event) => updateRule(rule.id, "overheadPercent", event.target.value)} /></td>
@@ -668,6 +744,26 @@ function getColumns(collection, setEditing) {
       editColumn
     ];
   }
+  if (collection === "fxRates") {
+    return [
+      { key: "currencyCode", label: "Currency" },
+      { key: "rateToUsd", label: "Rate to USD" },
+      { key: "validFrom", label: "Valid From", render: (row) => String(row.validFrom || "").slice(0, 10) },
+      { key: "validTo", label: "Valid To", render: (row) => row.validTo ? String(row.validTo).slice(0, 10) : "Open" },
+      { key: "active", label: "Active", render: (row) => String(row.active) },
+      editColumn
+    ];
+  }
+  if (collection === "masterDataItems") {
+    return [
+      { key: "code", label: "Code" },
+      { key: "label", label: "Label" },
+      { key: "description", label: "Description" },
+      { key: "sortOrder", label: "Sort" },
+      { key: "active", label: "Active", render: (row) => String(row.active) },
+      editColumn
+    ];
+  }
   if (collection === "regions") {
     return [
       { key: "code", label: "Code" },
@@ -754,7 +850,7 @@ function formatRangeNumber(row, offset = 0) {
   return `${row.prefix}-${year}${String(value).padStart(Number(row.sequenceLength || 6), "0")}`;
 }
 
-function AdminForm({ collection, record, onClose, onSaved }) {
+function AdminForm({ collection, activeTab = {}, record, onClose, onSaved }) {
   const [form, setForm] = useState(normalizeForm(collection, record));
   const [error, setError] = useState("");
   const { data: roleOptions = [] } = useQuery({
@@ -767,8 +863,14 @@ function AdminForm({ collection, record, onClose, onSaved }) {
     queryFn: () => apiFetch("/admin/currencies"),
     enabled: collection === "locations"
   });
+  const { data: masterOptions = [] } = useQuery({
+    queryKey: ["admin", "masterDataItems", "options"],
+    queryFn: () => apiFetch("/admin/masterDataItems"),
+    enabled: collection === "locations"
+  });
   const activeRoleOptions = roleOptions.filter((role) => role.active !== false);
   const activeCurrencyOptions = currencyOptions.filter((currency) => currency.active !== false);
+  const locationTypeOptions = activeMasterItems(masterOptions, "locationType");
 
   function update(key, value) {
     setForm({ ...form, [key]: value });
@@ -778,7 +880,7 @@ function AdminForm({ collection, record, onClose, onSaved }) {
     event.preventDefault();
     setError("");
     try {
-      const payload = denormalizeForm(collection, form);
+      const payload = denormalizeForm(collection, { ...form, ...(activeTab.category ? { category: activeTab.category } : {}) });
       if (record.id) {
         await patchJson(`/admin/${collection}/${record.id}`, payload);
       } else {
@@ -915,12 +1017,10 @@ function AdminForm({ collection, record, onClose, onSaved }) {
               />
             ) : key === "locationType" ? (
               <select value={form[key]} onChange={(event) => update(key, event.target.value)}>
-                <option>Offshore</option>
-                <option>Onsite</option>
-                <option>Nearshore</option>
+                {locationTypeOptions.map((item) => <option key={item.id || item.code} value={optionValue(item)}>{optionLabel(item)}</option>)}
               </select>
             ) : (
-              <input type={isNumberField(key) ? "number" : "text"} min={isNumberField(key) ? "0" : undefined} step={isNumberField(key) ? "any" : undefined} value={form[key]} onChange={(event) => update(key, event.target.value)} />
+              <input type={isDateField(key) ? "date" : isNumberField(key) ? "number" : "text"} min={isNumberField(key) ? "0" : undefined} step={isNumberField(key) ? "any" : undefined} value={form[key]} onChange={(event) => update(key, event.target.value)} />
             )}
           </Field>
         ))}
@@ -936,7 +1036,9 @@ function AdminForm({ collection, record, onClose, onSaved }) {
 function collectionLabel(collection) {
   const labels = {
     experienceLevels: "Experience Level",
-    currencies: "Currency / FX",
+    currencies: "Currency",
+    fxRates: "FX Rate",
+    masterDataItems: "Master Value",
     regions: "Region",
     locations: "Location",
     systemConfigs: "System Config",
@@ -958,12 +1060,18 @@ function isBooleanField(key) {
 }
 
 function isNumberField(key) {
-  return ["fromYears", "toYears", "fxToUsd", "sequenceLength", "nextNumber", "sortOrder"].includes(key);
+  return ["fromYears", "toYears", "fxToUsd", "rateToUsd", "sequenceLength", "nextNumber", "sortOrder"].includes(key);
+}
+
+function isDateField(key) {
+  return ["validFrom", "validTo"].includes(key);
 }
 
 function normalizeForm(collection, record) {
   if (collection === "experienceLevels") return { name: record.name || "", fromYears: String(record.fromYears ?? 0), toYears: String(record.toYears ?? 0), active: String(record.active ?? true) };
   if (collection === "currencies") return { code: record.code || "", name: record.name || "", fxToUsd: String(record.fxToUsd ?? 1), active: String(record.active ?? true) };
+  if (collection === "fxRates") return { currencyCode: record.currencyCode || "", rateToUsd: String(record.rateToUsd ?? 1), validFrom: String(record.validFrom || "").slice(0, 10), validTo: record.validTo ? String(record.validTo).slice(0, 10) : "", active: String(record.active ?? true) };
+  if (collection === "masterDataItems") return { category: record.category || "", code: record.code || "", label: record.label || "", description: record.description || "", sortOrder: String(record.sortOrder ?? 0), active: String(record.active ?? true) };
   if (collection === "regions") return { code: record.code || "", name: record.name || "", sortOrder: String(record.sortOrder ?? 0), active: String(record.active ?? true) };
   if (collection === "locations") return {
     name: record.name || "",
@@ -995,6 +1103,8 @@ function normalizeForm(collection, record) {
 function denormalizeForm(collection, form) {
   if (collection === "experienceLevels") return { ...form, fromYears: Number(form.fromYears), toYears: Number(form.toYears), active: form.active === "true" };
   if (collection === "currencies") return { ...form, fxToUsd: Number(form.fxToUsd), active: form.active === "true" };
+  if (collection === "fxRates") return { ...form, rateToUsd: Number(form.rateToUsd), active: form.active === "true" };
+  if (collection === "masterDataItems") return { ...form, sortOrder: Number(form.sortOrder), active: form.active === "true" };
   if (collection === "regions") return { ...form, sortOrder: Number(form.sortOrder), active: form.active === "true" };
   if (collection === "locations") return { ...form, active: form.active === "true" };
   if (collection === "numberRanges") return { ...form, sequenceLength: Number(form.sequenceLength), nextNumber: Number(form.nextNumber), includeYear: form.includeYear === "true", active: form.active === "true" };

@@ -39,11 +39,11 @@ export function requirePermission(featureKey, action) {
 }
 
 export function requirePlatformAdmin(req, res, next) {
-  if (["COO", "Super Admin"].includes(req.user?.role)) {
+  if (can(req.user, "admin", "view") || can(req.user, "masterData", "view")) {
     return next();
   }
 
-  return res.status(403).json({ message: "Admin access is restricted to platform administrators." });
+  return res.status(403).json({ message: "Admin access is not enabled for this role." });
 }
 
 export function requireChildCollectionPermission(req, res, next) {

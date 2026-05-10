@@ -66,8 +66,8 @@
 ## Technical Context
 - Frontend: React + Vite
 - Backend: Node.js + Express
-- Local MVP persistence currently uses file-backed storage
-- Prisma schema exists but is not the active runtime path in this environment
+- Runtime persistence is Postgres-backed through Prisma in deployed environments
+- Legacy `api/src/data/db.json` remains only as local/archive seed reference and should not be treated as the live production database
 
 ## Current Build Notes - 2026-04-26
 - Local app runtime is `http://localhost:4000`.
@@ -118,6 +118,18 @@
 - SOW commercial setup now includes Travel & Expenses fields: allowed flag, billing type, cap amount, approval required, and notes.
 - SOW workspace now includes an `Attachments` tab next to Financials. Attachment records support document type, document name, reference/URL, and notes for SOW document, scope document, project plan, pricing sheet, change request, approval email, and other references.
 - Actuals month entry now supports both row-level Save and `Save All Changes`, with dirty-row highlighting and per-row success/failure messages after bulk save.
+
+## Current Build Notes - 2026-05-10
+- Admin master data is now grouped into Organization Masters, Delivery Masters, Commercial Masters, Workflow Masters, and Security & System, with relevant sub-tabs under each group.
+- Generic master values now live in `masterDataItems` with `category`, `code`, `label`, sort, and active flags instead of scattered hardcoded lists.
+- FX Rates are a separate Commercial Master with `currencyCode`, `rateToUsd`, `validFrom`, `validTo`, and active flag for date-effective rates.
+- Commercial settings now include `standardHoursPerYear` and `standardManMonthHours`; backend hour conversion reads `standardManMonthHours` from config instead of a fixed 168.
+- Resource profile now carries `experienceLevel`, and resource/role forms read location type, engagement type, costing type, staffing priority, billing type, measurement unit, and availability exception choices from Admin-maintained masters where wired.
+- Industry is now an Admin-maintained master and is used as a Client dropdown.
+- Admin access is permission-driven through `admin:view` or `masterData:view`, not hardcoded to named roles.
+- Reports now use a dedicated `reports` permission instead of piggybacking on Financial Cockpit access.
+- Railway startup now runs `prisma migrate deploy` before the API starts; new master-data tables are covered by a Prisma migration.
+- Startup reconciliation inserts missing default permission features, role permissions, master values, FX rates, and system configs without overwriting existing live records.
 - Resource Planning is a new read-only top-level report for future staffing. It includes opportunity roles with probability `>= 70%`, opportunities in `SOW` stage, won opportunities not yet converted to SOW, and open/partially staffed SOW roles.
 - Opportunity pipeline now supports `SOW` stage with a default probability of `90%`; probability remains editable.
 - Resource Planning matches demand to active resources by SAP module for MVP and excludes resources that are exited, terminated, inactive, sabbatical, or on leave from available supply.

@@ -12,6 +12,7 @@ const permissionFeatures = [
   { id: "feature_actuals", key: "actuals", name: "Actuals", category: "Delivery", actions: ["view", "create", "edit", "export"] },
   { id: "feature_resource_planning", key: "resourcePlanning", name: "Resource Planning", category: "Delivery", actions: ["view", "export"] },
   { id: "feature_financial_cockpit", key: "financialCockpit", name: "Financial Cockpit", category: "Finance", actions: ["view", "export"] },
+  { id: "feature_reports", key: "reports", name: "Reports", category: "Finance", actions: ["view", "export"] },
   { id: "feature_attachments", key: "attachments", name: "Attachments", category: "Core", actions: ["view", "create", "edit", "delete"] },
   { id: "feature_master_data", key: "masterData", name: "Master Data", category: "Admin", actions: ["view", "create", "edit", "delete"] },
   { id: "feature_audit_logs", key: "auditLogs", name: "Audit Logs", category: "Admin", actions: ["view", "export"] },
@@ -21,12 +22,12 @@ const permissionFeatures = [
 const defaultRoleActions = {
   "Super Admin": ["*"],
   COO: ["*"],
-  "Vice President": ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "attachments:*", "auditLogs:*"],
-  Director: ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "attachments:*", "auditLogs:*"],
-  "Delivery Manager": ["commandCenter:view", "clients:view", "resources:*", "resourceCosting:view", "opportunities:view", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:view", "attachments:*", "auditLogs:view"],
+  "Vice President": ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "reports:*", "attachments:*", "auditLogs:*"],
+  Director: ["commandCenter:*", "clients:*", "resources:*", "resourceCosting:view", "opportunities:*", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:*", "reports:*", "attachments:*", "auditLogs:*"],
+  "Delivery Manager": ["commandCenter:view", "clients:view", "resources:*", "resourceCosting:view", "opportunities:view", "sows:*", "sowFinancials:*", "actuals:*", "resourcePlanning:*", "financialCockpit:view", "reports:view", "attachments:*", "auditLogs:view"],
   "Project Manager": ["commandCenter:view", "clients:view", "resources:view", "opportunities:view", "sows:view", "actuals:*", "resourcePlanning:view", "attachments:view"],
   "Account Manager": ["commandCenter:view", "clients:*", "resources:view", "opportunities:*", "sows:view", "sowFinancials:view", "attachments:view"],
-  "Finance Viewer": ["commandCenter:view", "clients:view", "resources:view", "resourceCosting:view", "opportunities:view", "sows:view", "sowFinancials:*", "actuals:view", "resourcePlanning:view", "financialCockpit:*", "attachments:view", "auditLogs:view"]
+  "Finance Viewer": ["commandCenter:view", "clients:view", "resources:view", "resourceCosting:view", "opportunities:view", "sows:view", "sowFinancials:*", "actuals:view", "resourcePlanning:view", "financialCockpit:*", "reports:*", "attachments:view", "auditLogs:view"]
 };
 
 function actionAllowed(roleName, featureKey, action) {
@@ -58,6 +59,21 @@ const appRoles = [
   { id: "role_admin", name: "Super Admin", canViewCost: true, canViewMargin: true, active: true }
 ];
 
+function masterItems(category, values) {
+  return values.map((item, index) => {
+    const [code, label, description] = Array.isArray(item) ? item : [item, item, ""];
+    return {
+      id: `md_${category}_${String(code).toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+      category,
+      code,
+      label,
+      description,
+      sortOrder: (index + 1) * 10,
+      active: true
+    };
+  });
+}
+
 export const seedData = {
   skills: sapModuleCatalog,
   currencies: [
@@ -69,6 +85,30 @@ export const seedData = {
     { id: "cur_aud", code: "AUD", name: "Australian Dollar", fxToUsd: 1.53, active: true },
     { id: "cur_sgd", code: "SGD", name: "Singapore Dollar", fxToUsd: 1.35, active: true },
     { id: "cur_aed", code: "AED", name: "UAE Dirham", fxToUsd: 3.67, active: true }
+  ],
+  fxRates: [
+    { id: "fx_usd_2026", currencyCode: "USD", rateToUsd: 1, validFrom: "2026-01-01T00:00:00.000Z", validTo: null, active: true },
+    { id: "fx_inr_2026", currencyCode: "INR", rateToUsd: 88, validFrom: "2026-01-01T00:00:00.000Z", validTo: null, active: true },
+    { id: "fx_gbp_2026", currencyCode: "GBP", rateToUsd: 0.8, validFrom: "2026-01-01T00:00:00.000Z", validTo: null, active: true },
+    { id: "fx_eur_2026", currencyCode: "EUR", rateToUsd: 0.92, validFrom: "2026-01-01T00:00:00.000Z", validTo: null, active: true },
+    { id: "fx_cad_2026", currencyCode: "CAD", rateToUsd: 1.36, validFrom: "2026-01-01T00:00:00.000Z", validTo: null, active: true }
+  ],
+  masterDataItems: [
+    ...masterItems("industry", ["E-commerce", "Manufacturing", "Retail", "Banking", "Healthcare", "Technology", "Utilities", "Public Sector", "Other"]),
+    ...masterItems("locationType", ["Offshore", "Onsite", "Nearshore"]),
+    ...masterItems("engagementType", ["Full-Time", "Part-Time", "Contractor", "C2C"]),
+    ...masterItems("costingType", ["Annual CTC", "Annual Salary", "Hourly Rate", "Monthly Rate"]),
+    ...masterItems("staffingPriority", ["High", "Medium", "Low"]),
+    ...masterItems("deploymentStatus", [["PLANNED", "Planned"], ["ACTIVE", "Active"], ["ENDED", "Ended"], ["CANCELLED", "Cancelled"]]),
+    ...masterItems("availabilityExceptionType", ["Planned Leave", "Internal Hold", "Client Hold", "Training", "Administrative", "Other"]),
+    ...masterItems("billingModel", [["TM_HOURLY", "T&M Hourly"], ["FIXED_MAN_MONTH", "Fixed Man-Month"], ["FIXED_MILESTONE", "Fixed Milestone"]]),
+    ...masterItems("billingType", ["Hourly", "Man-Day", "Man-Month", "Milestone"]),
+    ...masterItems("measurementUnit", [["HOURS", "Hours"], ["MAN_MONTHS", "Man-Months"]]),
+    ...masterItems("opportunityStage", [["QUALIFYING", "Qualifying"], ["PROPOSED", "Proposed"], ["NEGOTIATING", "Negotiating"], ["SOW", "SOW"], ["WON", "Won"], ["LOST", "Lost"]]),
+    ...masterItems("sowStatus", [["DRAFT", "Draft"], ["ACTIVE", "Active"], ["INACTIVE", "Inactive"], ["ON_HOLD", "On Hold"], ["COMPLETED", "Completed"], ["TERMINATED", "Terminated"]]),
+    ...masterItems("clientStatus", [["ACTIVE", "Active"], ["INACTIVE", "Inactive"], ["TERMINATED", "Terminated"]]),
+    ...masterItems("attachmentType", ["SOW Document", "Scope Document", "Project Plan", "Pricing Sheet", "Change Request", "Approval Email", "Other"]),
+    ...masterItems("milestoneStatus", ["Upcoming", "In Progress", "Invoiced", "Paid"])
   ],
   regions: [
     { id: "reg_na", code: "NA", name: "North America", sortOrder: 10, active: true },
@@ -97,6 +137,7 @@ export const seedData = {
   ],
   systemConfigs: [
     { id: "cfg_hours", key: "standardHoursPerYear", value: "1800", description: "Standard annual productive hours" },
+    { id: "cfg_man_month_hours", key: "standardManMonthHours", value: "168", description: "Standard hours per man-month" },
     { id: "cfg_overhead", key: "overheadMultiplier", value: "1.2", description: "Employee overhead multiplier" },
     { id: "cfg_engagement_overhead_rules", key: OVERHEAD_RULES_CONFIG_KEY, value: JSON.stringify(DEFAULT_OVERHEAD_RULES), description: "Engagement type and location type overhead rules" },
     { id: "cfg_full_deployment", key: "fullDeploymentThreshold", value: "90", description: "Allocation threshold for fully deployed" },

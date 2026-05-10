@@ -41,6 +41,8 @@ async function resetDatabase() {
     "appRole",
     "skill",
     "currency",
+    "fxRate",
+    "masterDataItem",
     "region",
     "location",
     "experienceLevel",
@@ -65,6 +67,8 @@ async function resetDatabase() {
     "appRole",
     "skill",
     "currency",
+    "fxRate",
+    "masterDataItem",
     "region",
     "location",
     "experienceLevel",
@@ -156,6 +160,30 @@ async function main() {
     active: row.active !== false
   })));
 
+  await createMany("fxRate", (db.fxRates || []).map((row) => ({
+    id: row.id,
+    currencyCode: row.currencyCode,
+    rateToUsd: Number(row.rateToUsd || row.fxToUsd || 1),
+    validFrom: asDate(row.validFrom) || new Date("2026-01-01T00:00:00.000Z"),
+    validTo: asDate(row.validTo),
+    active: row.active !== false,
+    createdAt: asDate(row.createdAt),
+    updatedAt: asDate(row.updatedAt)
+  })));
+
+  await createMany("masterDataItem", (db.masterDataItems || []).map((row) => ({
+    id: row.id,
+    category: row.category,
+    code: row.code,
+    label: row.label,
+    description: row.description,
+    sortOrder: Number(row.sortOrder || 0),
+    active: row.active !== false,
+    metadata: row.metadata ?? undefined,
+    createdAt: asDate(row.createdAt),
+    updatedAt: asDate(row.updatedAt)
+  })));
+
   await createMany("region", (db.regions || []).map((row) => ({
     id: row.id,
     code: row.code,
@@ -245,6 +273,7 @@ async function main() {
     subModule: row.subModule,
     primarySubModules: row.primarySubModules || [],
     secondarySkills: row.secondarySkills || [],
+    experienceLevel: row.experienceLevel,
     location: row.location,
     locationType: row.locationType,
     employmentType: row.employmentType,

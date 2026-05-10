@@ -24,6 +24,8 @@ const collectionModels = {
   auditLogs: "auditLog",
   skills: "skill",
   currencies: "currency",
+  fxRates: "fxRate",
+  masterDataItems: "masterDataItem",
   regions: "region",
   locations: "location",
   experienceLevels: "experienceLevel",
@@ -49,6 +51,8 @@ const dateFields = {
   users: ["createdAt", "updatedAt"],
   auditLogs: ["createdAt"],
   skills: ["createdAt", "updatedAt"],
+  fxRates: ["validFrom", "validTo", "createdAt", "updatedAt"],
+  masterDataItems: ["createdAt", "updatedAt"],
   appRoles: ["createdAt", "updatedAt"],
   permissionFeatures: ["createdAt", "updatedAt"],
   rolePermissions: ["createdAt", "updatedAt"]
@@ -200,6 +204,27 @@ async function bootstrapIfEmpty(collection, localDb) {
   });
 }
 
+async function seedMissingDefaults(localDb) {
+  const collections = [
+    "permissionFeatures",
+    "rolePermissions",
+    "masterDataItems",
+    "fxRates",
+    "systemConfigs"
+  ];
+
+  for (const collection of collections) {
+    const model = collectionModels[collection];
+    const localRows = localDb[collection] || [];
+    if (!model || !localRows.length) continue;
+
+    await prisma[model].createMany({
+      data: localRows.map((row) => cleanForPrisma(collection, row)),
+      skipDuplicates: true
+    });
+  }
+}
+
 export async function initializeStore() {
   if (initialized) return;
   const localDb = readLocalDb();
@@ -208,6 +233,8 @@ export async function initializeStore() {
   for (const collection of Object.keys(collectionModels)) {
     await bootstrapIfEmpty(collection, localDb);
   }
+
+  await seedMissingDefaults(seedData);
 
   for (const [collection, model] of Object.entries(collectionModels)) {
     db[collection] = serializeRows(await prisma[model].findMany());

@@ -12,7 +12,7 @@ export function can(user, featureKey, action) {
 }
 
 export function isPlatformAdmin(user = currentUser()) {
-  return ["COO", "Super Admin"].includes(user?.role);
+  return can(user, "admin", "view") || can(user, "masterData", "view");
 }
 
 export function canViewResourceCost(user = currentUser()) {

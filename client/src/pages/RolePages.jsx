@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch, patchJson, postJson } from "../lib/api";
 import { DEFAULT_OVERHEAD_RULES, removeOverheadFromLoadedCost } from "../lib/overheadRules";
+import { activeMasterItems, optionLabel, optionValue } from "../lib/masters";
 import { DataTable, Field, Section } from "../components.jsx";
 import { PageShell, SaveBar } from "./FormPages.jsx";
 
@@ -125,6 +126,7 @@ export function OpportunityRoleFormPage() {
   const { data: opportunity, isLoading: isOpportunityLoading, error: opportunityError } = useQuery({ queryKey: ["opportunity", id], queryFn: () => apiFetch(`/opportunities/${id}`) });
   const { data: skills = [], error: skillsError } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: experienceLevels = [], error: experienceLevelsError } = useQuery({ queryKey: ["admin", "experienceLevels"], queryFn: () => apiFetch("/admin/experienceLevels") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
   const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const role = opportunity?.roles?.find((item) => item.id === roleId);
 
@@ -209,6 +211,8 @@ export function OpportunityRoleFormPage() {
   }, [form.billRate, form.targetMargin, form.engagementType, form.roleLocation, overheadRules]);
 
   const skill = activeSkills(skills).find((item) => item.name === form.skill);
+  const locationTypes = activeMasterItems(masters, "locationType").filter((item) => ["Offshore", "Onsite"].includes(optionValue(item)));
+  const engagementTypes = activeMasterItems(masters, "engagementType");
 
   if (isOpportunityLoading) {
     return <div className="loading">Loading opportunity role...</div>;
@@ -258,17 +262,13 @@ export function OpportunityRoleFormPage() {
               </select>
             </Field>
             <Field label="Role Location">
-              <select value={form.roleLocation} onChange={(event) => setForm({ ...form, roleLocation: event.target.value, targetMargin: defaultTargetMarginForLocation(event.target.value) })}>
-                <option value="Offshore">Offshore</option>
-                <option value="Onsite">Onsite</option>
+                  <select value={form.roleLocation} onChange={(event) => setForm({ ...form, roleLocation: event.target.value, targetMargin: defaultTargetMarginForLocation(event.target.value) })}>
+                {locationTypes.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
               </select>
             </Field>
             <Field label="Engagement Type">
               <select value={form.engagementType} onChange={(event) => setForm({ ...form, engagementType: event.target.value })}>
-                <option value="Full-Time">Full-Time</option>
-                <option value="Part-Time">Part-Time</option>
-                <option value="Contractor">Contractor</option>
-                <option value="C2C">C2C</option>
+                {engagementTypes.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
               </select>
             </Field>
             <Field label="Experience Level">
@@ -341,6 +341,7 @@ export function SowRoleFormPage() {
   const { data: sow, isLoading: isSowLoading, error: sowError } = useQuery({ queryKey: ["sow", id], queryFn: () => apiFetch(`/sows/${id}`) });
   const { data: skills = [], error: skillsError } = useQuery({ queryKey: ["admin", "skills"], queryFn: () => apiFetch("/admin/skills") });
   const { data: experienceLevels = [], error: experienceLevelsError } = useQuery({ queryKey: ["admin", "experienceLevels"], queryFn: () => apiFetch("/admin/experienceLevels") });
+  const { data: masters = [] } = useQuery({ queryKey: ["admin", "masterDataItems"], queryFn: () => apiFetch("/admin/masterDataItems") });
   const { data: resources = [], error: resourcesError } = useQuery({ queryKey: ["resources"], queryFn: () => apiFetch("/resources") });
   const { data: overheadRules = DEFAULT_OVERHEAD_RULES } = useQuery({ queryKey: ["admin", "overhead-rules"], queryFn: () => apiFetch("/admin/overhead-rules") });
   const role = sow?.roles?.find((item) => item.id === roleId);
@@ -433,6 +434,11 @@ export function SowRoleFormPage() {
 
   const skill = activeSkills(skills).find((item) => item.name === form.skill);
   const candidateResources = useMemo(() => matchCandidates(resources, form), [resources, form]);
+  const locationTypes = activeMasterItems(masters, "locationType").filter((item) => ["Offshore", "Onsite"].includes(optionValue(item)));
+  const engagementTypes = activeMasterItems(masters, "engagementType");
+  const billingTypes = activeMasterItems(masters, "billingType");
+  const measurementUnits = activeMasterItems(masters, "measurementUnit");
+  const staffingPriorities = activeMasterItems(masters, "staffingPriority");
 
   if (isSowLoading) {
     return <div className="loading">Loading SOW role...</div>;
@@ -501,16 +507,12 @@ export function SowRoleFormPage() {
                 </Field>
                 <Field label="Role Location">
                   <select value={form.locationRequirement} onChange={(event) => setForm({ ...form, locationRequirement: event.target.value, targetMargin: defaultTargetMarginForLocation(event.target.value) })}>
-                    <option value="Offshore">Offshore</option>
-                    <option value="Onsite">Onsite</option>
+                    {locationTypes.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                   </select>
                 </Field>
                 <Field label="Engagement Type">
                   <select value={form.engagementType} onChange={(event) => setForm({ ...form, engagementType: event.target.value })}>
-                    <option value="Full-Time">Full-Time</option>
-                    <option value="Part-Time">Part-Time</option>
-                    <option value="Contractor">Contractor</option>
-                    <option value="C2C">C2C</option>
+                    {engagementTypes.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                   </select>
                 </Field>
                 <Field label="Experience Level">
@@ -520,23 +522,17 @@ export function SowRoleFormPage() {
                 </Field>
                 <Field label="Billing Type">
                   <select value={form.billingType} onChange={(event) => setForm({ ...form, billingType: event.target.value })}>
-                    <option value="Hourly">Hourly</option>
-                    <option value="Man-Day">Man-Day</option>
-                    <option value="Man-Month">Man-Month</option>
-                    <option value="Milestone">Milestone</option>
+                    {billingTypes.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                   </select>
                 </Field>
                 <Field label="Measurement Unit">
                   <select value={form.measurementUnit} onChange={(event) => setForm({ ...form, measurementUnit: event.target.value })}>
-                    <option value="HOURS">Hours</option>
-                    <option value="MAN_MONTHS">Man-Months</option>
+                    {measurementUnits.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                   </select>
                 </Field>
                 <Field label="Staffing Priority">
                   <select value={form.staffingPriority} onChange={(event) => setForm({ ...form, staffingPriority: event.target.value })}>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    {staffingPriorities.map((item) => <option key={item.id} value={optionValue(item)}>{optionLabel(item)}</option>)}
                   </select>
                 </Field>
               </div>
